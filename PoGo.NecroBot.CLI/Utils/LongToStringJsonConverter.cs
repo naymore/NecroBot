@@ -1,20 +1,20 @@
-namespace PoGo.NecroBot.CLI
+namespace PoGo.NecroBot.CLI.Utils
 {
     using System;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    public class IdToStringConverter : JsonConverter
+    internal class LongToStringJsonConverter : JsonConverter
     {
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            JToken jt = JValue.ReadFrom(reader);
+            JToken jt = JToken.ReadFrom(reader);
             return jt.Value<long>();
         }
 
         public override bool CanConvert(Type objectType)
         {
-            return typeof(System.Int64).Equals(objectType) || typeof(ulong).Equals(objectType);
+            return typeof(long) == objectType || typeof(ulong) == objectType;
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

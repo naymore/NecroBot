@@ -16,6 +16,7 @@ using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Tasks;
 using PoGo.NecroBot.Logic.Utils;
 using System.Collections.Generic;
+using PoGo.NecroBot.CLI.WebSocketHandler;
 
 #endregion
 

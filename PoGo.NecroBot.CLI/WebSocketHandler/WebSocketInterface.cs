@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using PoGo.NecroBot.CLI.WebSocketHandler;
 using PoGo.NecroBot.Logic.Common;
 using PoGo.NecroBot.Logic.Event;
 using PoGo.NecroBot.Logic.Logging;
@@ -13,13 +12,13 @@ using PoGo.NecroBot.Logic.Tasks;
 using SuperSocket.SocketBase;
 using SuperSocket.SocketBase.Config;
 using SuperSocket.WebSocket;
+using System.Threading.Tasks;
+using PoGo.NecroBot.CLI.Utils;
 
 #endregion
 
-namespace PoGo.NecroBot.CLI
+namespace PoGo.NecroBot.CLI.WebSocketHandler
 {
-    using System.Threading.Tasks;
-
     public class WebSocketInterface : IDisposable
     {
         private readonly WebSocketEventManager _websocketHandler;
@@ -28,26 +27,32 @@ namespace PoGo.NecroBot.CLI
         private PokeStopListEvent _lastPokeStopList;
         private ProfileEvent _lastProfile;
 
+        private readonly JsonSerializerSettings _jsonSerializerSettings;
+
         public WebSocketInterface(string ipAddress, int port, Session session)
         {
             _session = session;
             _server = new WebSocketServer();
             _websocketHandler = WebSocketEventManager.CreateInstance();
 
+            // Add custom seriaizer to convert ulong to string (ulong shoud not appear to json according to json specs)
+            _jsonSerializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
+            _jsonSerializerSettings.Converters.Add(new LongToStringJsonConverter());
+
             ITranslation translations = session.Translation;
 
             ServerConfig config = new ServerConfig
-                             {
-                                 Name = "NecroWebSocket",
-                                 Mode = SocketMode.Tcp,
-                                 Certificate = new CertificateConfig { FilePath = @"cert.pfx", Password = "necro" },
-                                 Listeners =
+            {
+                Name = "NecroWebSocket",
+                Mode = SocketMode.Tcp,
+                Certificate = new CertificateConfig { FilePath = @"cert.pfx", Password = "necro" },
+                Listeners =
                                      new List<ListenerConfig>
                                          {
                                              new ListenerConfig { Ip = ipAddress, Port = port, Security = "tls" },
                                              new ListenerConfig { Ip = ipAddress, Port = port + 1, Security = "none" }
                                          },
-                             };
+            };
 
             bool setupComplete = _server.Setup(config);
 
@@ -78,19 +83,9 @@ namespace PoGo.NecroBot.CLI
             }
         }
 
-        private void HandleEvent(PokeStopListEvent evt)
-        {
-            _lastPokeStopList = evt;
-        }
-
-        private void HandleEvent(ProfileEvent evt)
-        {
-            _lastProfile = evt;
-        }
-
         private async void HandleMessage(WebSocketSession session, string message)
         {
-            switch(message)
+            switch (message)
             {
                 case "PokemonList":
                     await PokemonListTask.Execute(_session);
@@ -144,22 +139,42 @@ namespace PoGo.NecroBot.CLI
             {
                 HandleEvent(eve);
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                Console.WriteLine(ex);
+                throw;
+
+                // NOTE: Missing signatures will cause exceptions to be thrown. If you add events make sure you add them to all subscribers
+                // such as StatisticsAggregator, ConsoleEventListener and WebSocketInterface (these are the ones I know of)
+                // -OR- add a generic handler with dynamic signature. FWIW: IEvent to dynamic is bad design after all.
             }
 
             Broadcast(Serialize(eve));
         }
 
+        #region -- Event Handlers --
+
+        private void HandleEvent(PokeStopListEvent evt)
+        {
+            _lastPokeStopList = evt;
+        }
+
+        private void HandleEvent(ProfileEvent evt)
+        {
+            _lastProfile = evt;
+        }
+
+        private void HandleEvent(dynamic ignoredEvent)
+        {
+            // Handle all events I don't care about
+            // NOP.
+        }
+
+        #endregion
+
         private string Serialize(dynamic evt)
         {
-            var jsonSerializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
-
-            // Add custom seriaizer to convert uong to string (ulong shoud not appear to json according to json specs)
-            jsonSerializerSettings.Converters.Add(new IdToStringConverter());
-
-            return JsonConvert.SerializeObject(evt, Formatting.None, jsonSerializerSettings);
+            return JsonConvert.SerializeObject(evt, Formatting.None, _jsonSerializerSettings);
         }
 
         #region -- IDisposable --

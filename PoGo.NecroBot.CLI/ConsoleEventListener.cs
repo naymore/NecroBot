@@ -17,6 +17,24 @@ namespace PoGo.NecroBot.CLI
     [SuppressMessage("ReSharper", "UnusedParameter.Local")]
     internal class ConsoleEventListener
     {
+        internal void Listen(IEvent evt, ISession session)
+        {
+            dynamic eve = evt;
+
+            try
+            {
+                HandleEvent(eve, session);
+            }
+            catch
+            {
+                // NOTE: Missing signatures will cause exceptions to be thrown. If you add events make sure you add them to all subscribers
+                // such as StatisticsAggregator, ConsoleEventListener and WebSocketInterface (these are the ones I know of)
+                // -OR- add a generic handler with dynamic signature. FWIW: IEvent to dynamic is bad design after all.
+            }
+        }
+
+        #region -- Event Handlers --
+
         private static void HandleEvent(ProfileEvent profileEvent, ISession session)
         {
             Logger.Write(session.Translation.GetTranslation(TranslationString.EventProfileLogin,
@@ -206,7 +224,7 @@ namespace PoGo.NecroBot.CLI
                 pokemonCaptureEvent.Distance.ToString("F2"),
                 returnRealBallName(pokemonCaptureEvent.Pokeball), pokemonCaptureEvent.BallAmount,
                 pokemonCaptureEvent.Latitude.ToString("0.000000"), pokemonCaptureEvent.Longitude.ToString("0.000000"),
-                pokemonCaptureEvent.Move1,pokemonCaptureEvent.Move2
+                pokemonCaptureEvent.Move1, pokemonCaptureEvent.Move2
                );
                 Logger.Write(message, LogLevel.Flee);
             }
@@ -329,17 +347,6 @@ namespace PoGo.NecroBot.CLI
             Logger.Write(updateEvent.ToString(), LogLevel.Update);
         }
 
-        private static void HandleEvent(SnipeModeEvent event1, ISession session) { }
-        private static void HandleEvent(PokeStopListEvent event1, ISession session) { }
-        private static void HandleEvent(EggsListEvent event1, ISession session) { }
-        private static void HandleEvent(InventoryListEvent event1, ISession session) { }
-        private static void HandleEvent(PokemonListEvent event1, ISession session) { }
-        private static void HandleEvent(UpdatePositionEvent event1, ISession session)
-        {
-            //uncomment for more info about locations
-            //Logger.Write(event1.Latitude.ToString("0.0000000000") + "," + event1.Longitude.ToString("0.0000000000"), LogLevel.Debug, force: true);
-        }
-
         private static void HandleEvent(HumanWalkingEvent humanWalkingEvent, ISession session)
         {
             if (session.LogicSettings.ShowVariantWalking)
@@ -388,7 +395,7 @@ namespace PoGo.NecroBot.CLI
                 case HumanWalkSnipeEventTypes.PokemonScanned:
                     Logger.Write(session.Translation.GetTranslation(TranslationString.HumanWalkSnipeUpdate, ev.RarePokemons.Count, 2, 3), LogLevel.Sniper, ConsoleColor.DarkMagenta);
                     break;
-                    case HumanWalkSnipeEventTypes.PokestopUpdated:
+                case HumanWalkSnipeEventTypes.PokestopUpdated:
                     Logger.Write(session.Translation.GetTranslation(TranslationString.HumanWalkSnipeAddedPokestop, ev.NearestDistance, ev.Pokestops.Count), LogLevel.Sniper, ConsoleColor.Yellow);
                     break;
 
@@ -401,14 +408,18 @@ namespace PoGo.NecroBot.CLI
             }
         }
 
-        internal void Listen(IEvent evt, ISession session)
+        private static void HandleEvent(UpdatePositionEvent event1, ISession session)
         {
-            dynamic eve = evt;
-
-            try
-            { HandleEvent(eve, session); }
-            catch
-            { }
+            //uncomment for more info about locations
+            //Logger.Write(event1.Latitude.ToString("0.0000000000") + "," + event1.Longitude.ToString("0.0000000000"), LogLevel.Debug, force: true);
         }
+
+        private void HandleEvent(dynamic ignoredEvent, ISession session)
+        {
+            // Handle all events I don't care about
+            // NOP.
+        }
+
+        #endregion
     }
 }
