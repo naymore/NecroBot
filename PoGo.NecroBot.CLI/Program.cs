@@ -282,7 +282,7 @@ namespace PoGo.NecroBot.CLI
 
         private static void SaveLocationToDisk(double lat, double lng)
         {
-            var coordsPath = Path.Combine(session.LogicSettings.TempDataDirectory, "LastPos.ini");
+            string coordsPath = Path.Combine(session.LogicSettings.TempDataDirectory, "LastPos.ini");
 
             File.WriteAllText(coordsPath, $"{lat}:{lng}");
         }

@@ -1,40 +1,33 @@
-﻿#region using directives
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using GeoCoordinatePortable;
 using PoGo.NecroBot.Logic.Common;
-using PoGo.NecroBot.Logic.Event;
-using PoGo.NecroBot.Logic.Logging;
 using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Utils;
-using PokemonGo.RocketAPI.Extensions;
-using POGOProtos.Map.Fort;
-using POGOProtos.Networking.Responses;
-
-#endregion
+using PoGo.NecroBot.Logic.Logging;
 
 namespace PoGo.NecroBot.Logic.Tasks
 {
     public static class FarmPokestopsTask
     {
-        private static bool firstStart = true;
+        private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+        private static bool _firstStart = true;
+
         public static async Task Execute(ISession session, CancellationToken cancellationToken)
         {
+            _logger.Debug("FarmPokestopsTask called.");
+
             cancellationToken.ThrowIfCancellationRequested();
-            
-            var distanceFromStart = LocationUtils.CalculateDistanceInMeters(
-                session.Settings.DefaultLatitude, session.Settings.DefaultLongitude,
-                session.Client.CurrentLatitude, session.Client.CurrentLongitude);
+
+            double distanceFromStart = LocationUtils.CalculateDistanceInMeters(
+                session.Settings.DefaultLatitude, session.Settings.DefaultLongitude, session.Client.CurrentLatitude, session.Client.CurrentLongitude);
 
             // Edge case for when the client somehow ends up outside the defined radius
-            if (session.LogicSettings.MaxTravelDistanceInMeters != 0 && firstStart  &&
+            if (session.LogicSettings.MaxTravelDistanceInMeters != 0 && _firstStart &&
                 distanceFromStart > session.LogicSettings.MaxTravelDistanceInMeters)
             {
-                firstStart = false;
+                _firstStart = false;
+
                 Logger.Write(
                     session.Translation.GetTranslation(TranslationString.FarmPokestopsOutsideRadius, distanceFromStart),
                     LogLevel.Warning);

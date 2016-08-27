@@ -1,6 +1,4 @@
-﻿#region using directives
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -11,17 +9,20 @@ using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Utils;
 using POGOProtos.Data;
 using POGOProtos.Inventory.Item;
-
-#endregion
+using NLog;
 
 namespace PoGo.NecroBot.Logic.Tasks
 {
     public class EvolvePokemonTask
     {
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
         private static DateTime _lastLuckyEggTime;
 
         public static async Task Execute(ISession session, CancellationToken cancellationToken)
         {
+            _logger.Debug("EvolvePokemonTask called.");
+
             cancellationToken.ThrowIfCancellationRequested();
 
             await session.Inventory.RefreshCachedInventory();

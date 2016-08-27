@@ -17,7 +17,7 @@ using POGOProtos.Networking.Responses;
 using NLog;
 
 namespace PoGo.NecroBot.Logic.Tasks
-{   
+{
     public static class UseIncubatorsTask
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
