@@ -50,14 +50,16 @@ namespace PoGo.NecroBot.Logic.Logging
         ///     unset.
         /// </summary>
         /// <param name="logger"></param>
-        public static void SetLogger(ILogger logger, string subPath = "", bool isGui = false)
+        public static void SetLogger(ILogger logger, string workingFolder, bool isGui = false)
         {
             _logger = logger;
             _isGui = isGui;
+
             if (!_isGui)
             {
-                _path = Path.Combine(Directory.GetCurrentDirectory(), subPath, "Logs");
+                _path = Path.Combine(workingFolder, "Logs");
                 Directory.CreateDirectory(_path);
+
                 Log($"Initializing NecroBot logger at time {DateTime.Now}...");
             }
         }

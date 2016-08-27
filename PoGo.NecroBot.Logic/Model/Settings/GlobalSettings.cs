@@ -20,12 +20,15 @@ namespace PoGo.NecroBot.Logic.Model.Settings
     {
         [JsonIgnore]
         public AuthSettings Auth = new AuthSettings();
+
         [JsonIgnore]
-        public string GeneralConfigPath;
+        public string WorkingDirectory { get; set; }
+
         [JsonIgnore]
-        public string ProfileConfigPath;
+        public string ConfigurationDirectory { get; set; }
+
         [JsonIgnore]
-        public string ProfilePath;
+        public string TempDataDirectory { get; set; }
 
         public ConsoleConfig ConsoleConfig = new ConsoleConfig();
         public UpdateConfig UpdateConfig = new UpdateConfig();
@@ -327,26 +330,27 @@ namespace PoGo.NecroBot.Logic.Model.Settings
 
         public Dictionary<PokemonId, HumanWalkSnipeFilter> HumanWalkSnipeFilters = HumanWalkSnipeFilter.Default();
 
-        public static GlobalSettings Load(string path, bool boolSkipSave = false)
+        public static GlobalSettings Load(string workingDirectory, bool boolSkipSave = false)
         {
-            GlobalSettings settings = null;
-            var profilePath = Path.Combine(Directory.GetCurrentDirectory(), path);
-            var profileConfigPath = Path.Combine(profilePath, "config");
-            var configFile = Path.Combine(profileConfigPath, "config.json");
-            var shouldExit = false;
+            GlobalSettings settings;
 
-            if (File.Exists(configFile))
+            string configurationDirectory = Path.Combine(workingDirectory, "config");
+            string configurationFilePath = Path.Combine(configurationDirectory, "config.json");
+
+            bool shouldExit = false;
+
+            if (File.Exists(configurationFilePath))
             {
                 try
                 {
                     //if the file exists, load the settings
-                    string input = "";
+                    string input;
                     int count = 0;
                     while (true)
                     {
                         try
                         {
-                            input = File.ReadAllText(configFile);
+                            input = File.ReadAllText(configurationFilePath);
                             if (!input.Contains("DeprecatedMoves"))
                                 input = input.Replace("\"Moves\"", $"\"DeprecatedMoves\"");
 
@@ -362,7 +366,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                             count++;
                             Thread.Sleep(1000);
                         }
-                    };
+                    }
 
                     var jsonSettings = new JsonSerializerSettings();
                     jsonSettings.Converters.Add(new StringEnumConverter { CamelCaseText = true });
@@ -373,7 +377,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                     {
                         settings = JsonConvert.DeserializeObject<GlobalSettings>(input, jsonSettings);
                     }
-                    catch (Newtonsoft.Json.JsonSerializationException exception)
+                    catch (JsonSerializationException exception)
                     {
                         Logger.Write("JSON Exception: " + exception.Message, LogLevel.Error);
                         return null;
@@ -407,14 +411,15 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                 shouldExit = true;
             }
 
-            settings.ProfilePath = profilePath;
-            settings.ProfileConfigPath = profileConfigPath;
-            settings.GeneralConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "config");
+            // set transient objects (these values are ignored in serialization)
+            settings.WorkingDirectory = workingDirectory;
+            settings.TempDataDirectory = Path.Combine(workingDirectory, "temp");
+            settings.ConfigurationDirectory = Path.Combine(workingDirectory, "config");
 
             if (!boolSkipSave || !settings.UpdateConfig.AutoUpdate)
             {
-                settings.Save(configFile);
-                settings.Auth.Load(Path.Combine(profileConfigPath, "auth.json"));
+                settings.SaveConfigFile(configurationFilePath);
+                settings.Auth.Load(Path.Combine(configurationDirectory, "auth.json"));
             }
 
             return shouldExit ? null : settings;
@@ -447,14 +452,15 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             }
         }
 
-        public static Session SetupSettings(Session session, GlobalSettings settings, String configPath)
+        public static Session SetupSettings(Session session, GlobalSettings settings, string configurationFilePath)
         {
             Session newSession = SetupTranslationCode(session, session.Translation, settings);
 
             SetupAccountType(newSession.Translation, settings);
             SetupUserAccount(newSession.Translation, settings);
             SetupConfig(newSession.Translation, settings);
-            SaveFiles(settings, configPath);
+
+            SaveFiles(settings, configurationFilePath);
 
             Logger.Write(session.Translation.GetTranslation(TranslationString.FirstStartSetupCompleted), LogLevel.None);
 
@@ -498,13 +504,12 @@ namespace PoGo.NecroBot.Logic.Model.Settings
 
         private static void SetupAccountType(ITranslation translator, GlobalSettings settings)
         {
-            string strInput;
             Logger.Write(translator.GetTranslation(TranslationString.FirstStartSetupAccount), LogLevel.None);
             Logger.Write(translator.GetTranslation(TranslationString.FirstStartSetupTypePrompt, "google", "ptc"));
 
             while (true)
             {
-                strInput = Console.ReadLine().ToLower();
+                string strInput = Console.ReadLine().ToLower();
 
                 switch (strInput)
                 {
@@ -607,24 +612,23 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             }
         }
 
-        private static void SaveFiles(GlobalSettings settings, String configFile)
+        private static void SaveFiles(GlobalSettings settings, string configurationFilePath)
         {
-            settings.Save(configFile);
-            settings.Auth.Load(Path.Combine(settings.ProfileConfigPath, "auth.json"));
+            settings.SaveConfigFile(configurationFilePath);
+            settings.Auth.Load(Path.Combine(settings.ConfigurationDirectory, "auth.json"));
         }
 
-        public void Save(string fullPath)
+        public void SaveConfigFile(string filePath)
         {
-            var output = JsonConvert.SerializeObject(this, Formatting.Indented,
-                new StringEnumConverter { CamelCaseText = true });
+            string json = JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter { CamelCaseText = true });
 
-            var folder = Path.GetDirectoryName(fullPath);
-            if (folder != null && !Directory.Exists(folder))
+            string folder = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(folder))
             {
                 Directory.CreateDirectory(folder);
             }
 
-            File.WriteAllText(fullPath, output);
+            File.WriteAllText(filePath, json);
         }
     }
 }

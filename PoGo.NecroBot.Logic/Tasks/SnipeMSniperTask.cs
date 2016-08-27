@@ -31,7 +31,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                     if (!await SnipePokemonTask.CheckPokeballsToSnipe(session.LogicSettings.MinPokeballsWhileSnipe + 1, session, cancellationToken))
                         return;
 
-                    string pth = Path.Combine(session.LogicSettings.ProfilePath, "SnipeMS.json");
+                    string pth = Path.Combine(session.LogicSettings.ConfigurationDirectory, "SnipeMS.json");
                     if (!File.Exists(pth))
                         return;
                     StreamReader sr = new StreamReader(pth, Encoding.UTF8);

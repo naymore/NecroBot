@@ -40,19 +40,19 @@ namespace PoGo.NecroBot.Logic.State
 
             await CleanupOldFiles();
 
-            if( !session.LogicSettings.CheckForUpdates )
+            if (!session.LogicSettings.CheckForUpdates)
             {
-                session.EventDispatcher.Send( new UpdateEvent
+                session.EventDispatcher.Send(new UpdateEvent
                 {
-                    Message = session.Translation.GetTranslation( TranslationString.CheckForUpdatesDisabled, Assembly.GetExecutingAssembly().GetName().Version.ToString( 3 ) )
-                } );
+                    Message = session.Translation.GetTranslation(TranslationString.CheckForUpdatesDisabled, Assembly.GetExecutingAssembly().GetName().Version.ToString(3))
+                });
 
                 return new LoginState();
             }
 
             var autoUpdate = session.LogicSettings.AutoUpdate;
             var isLatest = IsLatest();
-            if ( isLatest )
+            if (isLatest)
             {
                 session.EventDispatcher.Send(new UpdateEvent
                 {
@@ -60,25 +60,26 @@ namespace PoGo.NecroBot.Logic.State
                         session.Translation.GetTranslation(TranslationString.GotUpToDateVersion, Assembly.GetExecutingAssembly().GetName().Version.ToString(3))
                 });
                 return new LoginState();
-            } else if ( !autoUpdate )
+            }
+            else if (!autoUpdate)
             {
-                Logger.Write( "New update detected, would you like to update? Y/N", LogLevel.Update );
+                Logger.Write("New update detected, would you like to update? Y/N", LogLevel.Update);
 
                 bool boolBreak = false;
-                while( !boolBreak )
+                while (!boolBreak)
                 {
                     string strInput = Console.ReadLine().ToLower();
 
-                    switch( strInput )
+                    switch (strInput)
                     {
                         case "y":
                             boolBreak = true;
                             break;
                         case "n":
-                            Logger.Write( "Update Skipped", LogLevel.Update );
+                            Logger.Write("Update Skipped", LogLevel.Update);
                             return new LoginState();
                         default:
-                            Logger.Write( session.Translation.GetTranslation( TranslationString.PromptError, "Y", "N" ), LogLevel.Error );
+                            Logger.Write(session.Translation.GetTranslation(TranslationString.PromptError, "Y", "N"), LogLevel.Error);
                             continue;
                     }
                 }
@@ -123,8 +124,8 @@ namespace PoGo.NecroBot.Logic.State
                 Message = session.Translation.GetTranslation(TranslationString.UpdateFinished)
             });
 
-            if( TransferConfig( baseDir, session ) )
-                Utils.ErrorHandler.ThrowFatalError( session.Translation.GetTranslation( TranslationString.FinishedTransferringConfig ), 5, LogLevel.Update );
+            if (TransferConfig(baseDir, session))
+                Utils.ErrorHandler.ThrowFatalError(session.Translation.GetTranslation(TranslationString.FinishedTransferringConfig), 5, LogLevel.Update);
 
             Process.Start(Assembly.GetEntryAssembly().Location);
             Environment.Exit(-1);
@@ -196,7 +197,7 @@ namespace PoGo.NecroBot.Logic.State
             {
                 var regex = new Regex(@"\[assembly\: AssemblyVersion\(""(\d{1,})\.(\d{1,})\.(\d{1,})""\)\]");
                 var match = regex.Match(DownloadServerVersion());
-                
+
                 if (!match.Success)
                     return false;
 
@@ -258,52 +259,52 @@ namespace PoGo.NecroBot.Logic.State
             if (!session.LogicSettings.TransferConfigAndAuthOnUpdate)
                 return false;
 
-            var configDir = Path.Combine(baseDir, "Config");
-            if (!Directory.Exists(configDir))
+            string configurationDirectory = session.LogicSettings.ConfigurationDirectory;
+            if (!Directory.Exists(configurationDirectory))
                 return false;
 
-            var oldConf = GetJObject(Path.Combine(configDir, "config.json.old"));
-            var oldAuth = GetJObject(Path.Combine(configDir, "auth.json.old"));
+            var oldConf = GetJObject(Path.Combine(configurationDirectory, "config.json.old"));
+            var oldAuth = GetJObject(Path.Combine(configurationDirectory, "auth.json.old"));
             GlobalSettings.Load("");
 
-            var newConf = GetJObject(Path.Combine(configDir, "config.json"));
-            var newAuth = GetJObject(Path.Combine(configDir, "auth.json"));
+            var newConf = GetJObject(Path.Combine(configurationDirectory, "config.json"));
+            var newAuth = GetJObject(Path.Combine(configurationDirectory, "auth.json"));
 
             List<JProperty> lstNewOptions = TransferJson(oldConf, newConf);
             TransferJson(oldAuth, newAuth);
-            
-            File.WriteAllText(Path.Combine(configDir, "config.json"), newConf.ToString());
-            File.WriteAllText(Path.Combine(configDir, "auth.json"), newAuth.ToString());
 
-            if( lstNewOptions != null && lstNewOptions.Count > 0 )
+            File.WriteAllText(Path.Combine(configurationDirectory, "config.json"), newConf.ToString());
+            File.WriteAllText(Path.Combine(configurationDirectory, "auth.json"), newAuth.ToString());
+
+            if (lstNewOptions != null && lstNewOptions.Count > 0)
             {
-                Console.Write( "\n" );
-                Logger.Write( "### New Options found ###", LogLevel.New );
+                Console.Write("\n");
+                Logger.Write("### New Options found ###", LogLevel.New);
 
-                foreach( JProperty prop in lstNewOptions )
-                    Logger.Write( prop.ToString(), LogLevel.New );
+                foreach (JProperty prop in lstNewOptions)
+                    Logger.Write(prop.ToString(), LogLevel.New);
 
-                Logger.Write( "Would you like to open the Config file? Y/N", LogLevel.Info );
-                
-                while( true )
+                Logger.Write("Would you like to open the Config file? Y/N", LogLevel.Info);
+
+                while (true)
                 {
                     string strInput = Console.ReadLine().ToLower();
 
-                    switch( strInput )
+                    switch (strInput)
                     {
                         case "y":
-                            Process.Start( Path.Combine( configDir, "config.json" ) );
+                            Process.Start(Path.Combine(configurationDirectory, "config.json"));
                             return true;
                         case "n":
-                            Utils.ErrorHandler.ThrowFatalError( session.Translation.GetTranslation( TranslationString.FinishedTransferringConfig ), 5, LogLevel.Update, true );
+                            Utils.ErrorHandler.ThrowFatalError(session.Translation.GetTranslation(TranslationString.FinishedTransferringConfig), 5, LogLevel.Update, true);
                             return true;
                         default:
-                            Logger.Write( session.Translation.GetTranslation( TranslationString.PromptError, "y", "n" ), LogLevel.Error );
+                            Logger.Write(session.Translation.GetTranslation(TranslationString.PromptError, "y", "n"), LogLevel.Error);
                             continue;
                     }
                 }
             }
-            
+
             return true;
         }
 
@@ -313,23 +314,23 @@ namespace PoGo.NecroBot.Logic.State
             {
                 // Figuring out the best method to detect new settings \\
                 List<JProperty> lstNewOptions = new List<JProperty>();
-                
-                foreach( var newProperty in newFile.Properties() )
+
+                foreach (var newProperty in newFile.Properties())
                 {
                     bool boolFound = false;
-                    
-                    foreach( var oldProperty in oldFile.Properties() )
+
+                    foreach (var oldProperty in oldFile.Properties())
                     {
-                        if( newProperty.Name.Equals( oldProperty.Name ) )
+                        if (newProperty.Name.Equals(oldProperty.Name))
                         {
                             boolFound = true;
-                            newFile[ newProperty.Name ] = oldProperty.Value;
+                            newFile[newProperty.Name] = oldProperty.Value;
                             break;
                         }
                     }
 
-                    if( !boolFound )
-                        lstNewOptions.Add( newProperty );
+                    if (!boolFound)
+                        lstNewOptions.Add(newProperty);
                 }
 
                 return lstNewOptions;
@@ -342,9 +343,9 @@ namespace PoGo.NecroBot.Logic.State
                             break;
                         }*/
             }
-            catch( Exception error )
+            catch (Exception error)
             {
-                Console.WriteLine( error.Message );
+                Console.WriteLine(error.Message);
             }
 
             return null;

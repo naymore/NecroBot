@@ -97,9 +97,9 @@ namespace PoGo.NecroBot.Logic.Interfaces.Configuration
         string RenameTemplate { get; }
         int AmountOfPokemonToDisplayOnStart { get; }
         string TranslationLanguageCode { get; }
-        string ProfilePath { get; }
-        string ProfileConfigPath { get; }
-        string GeneralConfigPath { get; }
+        string WorkingDirectory { get; }
+        string TempDataDirectory { get; }
+        string ConfigurationDirectory { get; }
         bool SnipeAtPokestops { get; }
         bool UseTelegramAPI { get; }
         string TelegramAPIKey { get; }

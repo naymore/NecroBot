@@ -857,6 +857,8 @@ namespace PoGo.NecroBot.Logic.Common
             new KeyValuePair<POGOProtos.Enums.PokemonMove, string> ( POGOProtos.Enums.PokemonMove.RockSmashFast, "RockSmashFast" )
         };
 
+        private const string TRANSLATIONS_FOLDER = "Translations";
+
         public string GetTranslation(TranslationString translationString, params object[] data)
         {
             var translation = _translationStrings.FirstOrDefault(t => t.Key.Equals(translationString)).Value;
@@ -890,9 +892,8 @@ namespace PoGo.NecroBot.Logic.Common
 
         public static Translation Load(ILogicSettings logicSettings, Translation translations)
         {
-            var translationsLanguageCode = logicSettings.TranslationLanguageCode;
-            var translationPath = Path.Combine(logicSettings.GeneralConfigPath, "translations");
-            var fullPath = Path.Combine(translationPath, "translation." + translationsLanguageCode + ".json");
+            string translationsLanguageCode = logicSettings.TranslationLanguageCode;
+            string fullPath = Path.Combine(TRANSLATIONS_FOLDER, "translation." + translationsLanguageCode + ".json");
 
             if (File.Exists(fullPath))
             {
@@ -906,7 +907,7 @@ namespace PoGo.NecroBot.Logic.Common
                 try
                 {
                     translations = JsonConvert.DeserializeObject<Translation>(input, jsonSettings);
-                    //TODO make json to fill default values as it won't do it now
+                    
                     new Translation()._translationStrings.Where(
                         item => translations._translationStrings.All(a => a.Key != item.Key))
                         .ToList()
@@ -918,7 +919,7 @@ namespace PoGo.NecroBot.Logic.Common
                 }
                 catch (JsonException ex)
                 {
-                    Logger.Write($"[ERROR] Issue loading translations: {ex.ToString()}", LogLevel.Warning);
+                    Logger.Write($"[ERROR] Issue loading translations: {ex}", LogLevel.Warning);
                     Logger.Write("[Request] Rebuild the translations folder? Y/N");
 
                     string strInput = Console.ReadLine().ToLower();
@@ -929,7 +930,7 @@ namespace PoGo.NecroBot.Logic.Common
                         // This is because default values cannot be supplied from other languages \\
                         Logger.Write("Loading fresh translations and continuing");
                         translations = new Translation();
-                        translations.Save(Path.Combine(translationPath, "translation.en.json"));
+                        translations.SaveToDisk(Path.Combine(TRANSLATIONS_FOLDER, "translation.en.json"));
                     }
                     else
                     {
@@ -941,24 +942,23 @@ namespace PoGo.NecroBot.Logic.Common
             else
             {
                 translations = new Translation();
-                translations.Save(Path.Combine(translationPath, "translation.en.json"));
+                translations.SaveToDisk(Path.Combine(TRANSLATIONS_FOLDER, "translation.en.json"));
             }
 
             return translations;
         }
 
-        public void Save(string fullPath)
+        public void SaveToDisk(string fullPath)
         {
-            var output = JsonConvert.SerializeObject(this, Formatting.Indented,
-                new StringEnumConverter { CamelCaseText = true });
+            string json = JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter { CamelCaseText = true });
 
-            var folder = Path.GetDirectoryName(fullPath);
+            string folder = Path.GetDirectoryName(fullPath);
             if (folder != null && !Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);
             }
 
-            File.WriteAllText(fullPath, output);
+            File.WriteAllText(fullPath, json);
         }
     }
 }

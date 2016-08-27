@@ -40,11 +40,11 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             }
         }
 
-        public void Load(string path)
+        public void Load(string filePath)
         {
             try
             {
-                _filePath = path;
+                _filePath = filePath;
 
                 if (File.Exists(_filePath))
                 {
@@ -55,24 +55,25 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                     settings.Converters.Add(new StringEnumConverter { CamelCaseText = true });
                     JsonConvert.PopulateObject(input, this, settings);
                 }
+
                 // Do some post-load logic to determine what device info to be using - if 'custom' is set we just take what's in the file without question
-                if (!this.DeviceConfig.DevicePackageName.Equals("random", StringComparison.InvariantCultureIgnoreCase) && !this.DeviceConfig.DevicePackageName.Equals("custom", StringComparison.InvariantCultureIgnoreCase))
+                if (!DeviceConfig.DevicePackageName.Equals("random", StringComparison.InvariantCultureIgnoreCase) && !this.DeviceConfig.DevicePackageName.Equals("custom", StringComparison.InvariantCultureIgnoreCase))
                 {
                     // User requested a specific device package, check to see if it exists and if so, set it up - otherwise fall-back to random package
-                    string keepDevId = this.DeviceConfig.DeviceId;
-                    SetDevInfoByKey(this.DeviceConfig.DevicePackageName);
-                    this.DeviceConfig.DeviceId = keepDevId;
+                    string keepDevId = DeviceConfig.DeviceId;
+                    SetDevInfoByKey(DeviceConfig.DevicePackageName);
+                    DeviceConfig.DeviceId = keepDevId;
                 }
-                if (this.DeviceConfig.DevicePackageName.Equals("random", StringComparison.InvariantCultureIgnoreCase))
+                if (DeviceConfig.DevicePackageName.Equals("random", StringComparison.InvariantCultureIgnoreCase))
                 {
                     // Random is set, so pick a random device package and set it up - it will get saved to disk below and re-used in subsequent sessions
                     Random rnd = new Random();
                     int rndIdx = rnd.Next(0, DeviceInfoHelper.DeviceInfoSets.Keys.Count - 1);
-                    this.DeviceConfig.DevicePackageName = DeviceInfoHelper.DeviceInfoSets.Keys.ToArray()[rndIdx];
+                    DeviceConfig.DevicePackageName = DeviceInfoHelper.DeviceInfoSets.Keys.ToArray()[rndIdx];
                     SetDevInfoByKey(this.DeviceConfig.DevicePackageName);
                 }
                 if (string.IsNullOrEmpty(this.DeviceConfig.DeviceId) || this.DeviceConfig.DeviceId == "8525f5d8201f78b5")
-                    this.DeviceConfig.DeviceId = this.RandomString(16, "0123456789abcdef"); // changed to random hex as full alphabet letters could have been flagged
+                    DeviceConfig.DeviceId = this.RandomString(16, "0123456789abcdef"); // changed to random hex as full alphabet letters could have been flagged
 
                 // Jurann: Note that some device IDs I saw when adding devices had smaller numbers, only 12 or 14 chars instead of 16 - probably not important but noted here anyway
 

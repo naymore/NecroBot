@@ -42,7 +42,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                 .OrderBy(x => x.EggKmWalkedTarget - x.EggKmWalkedStart)
                 .ToList();
 
-            var rememberedIncubatorsFilePath = Path.Combine(session.LogicSettings.ProfilePath, "temp", "incubators.json");
+            var rememberedIncubatorsFilePath = Path.Combine(session.LogicSettings.TempDataDirectory, "incubators.json");
             var rememberedIncubators = GetRememberedIncubators(rememberedIncubatorsFilePath);
             var pokemons = (await session.Inventory.GetPokemons()).ToList();
 
@@ -123,7 +123,12 @@ namespace PoGo.NecroBot.Logic.Tasks
 
         private static List<IncubatorUsage> GetRememberedIncubators(string filePath)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            string directoryName = Path.GetDirectoryName(filePath);
+
+            if (!string.IsNullOrEmpty(directoryName))
+            {
+                Directory.CreateDirectory(directoryName);
+            }
 
             if (File.Exists(filePath))
                 return JsonConvert.DeserializeObject<List<IncubatorUsage>>(File.ReadAllText(filePath, Encoding.UTF8));

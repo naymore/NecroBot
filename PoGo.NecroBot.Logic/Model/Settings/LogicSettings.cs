@@ -21,9 +21,9 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             _settings = settings;
         }
 
-        public string ProfilePath => _settings.ProfilePath;
-        public string ProfileConfigPath => _settings.ProfileConfigPath;
-        public string GeneralConfigPath => _settings.GeneralConfigPath;
+        public string WorkingDirectory => _settings.WorkingDirectory;
+        public string TempDataDirectory => _settings.TempDataDirectory;
+        public string ConfigurationDirectory => _settings.ConfigurationDirectory;
         public bool CheckForUpdates => _settings.UpdateConfig.CheckForUpdates;
         public bool AutoUpdate => _settings.UpdateConfig.AutoUpdate;
         public bool TransferConfigAndAuthOnUpdate => _settings.UpdateConfig.TransferConfigAndAuthOnUpdate;
