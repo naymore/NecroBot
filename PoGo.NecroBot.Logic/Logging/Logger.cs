@@ -14,15 +14,15 @@ namespace PoGo.NecroBot.Logic.Logging
         private static ILogger _logger;
         private static string _path;
         private static DateTime _lastLogTime;
-        private static readonly IList<string> LogbufferList = new List<string>();
+        private static readonly IList<string> _logbufferList = new List<string>();
         private static string _lastLogMessage;
         private static bool _isGui;
 
         private static void Log(string message, bool force = false)
         {
-            lock (LogbufferList)
+            lock (_logbufferList)
             {
-                LogbufferList.Add(message);
+                _logbufferList.Add(message);
 
                 if (_lastLogTime.AddSeconds(60).Ticks > DateTime.Now.Ticks && !force)
                     return;
@@ -33,13 +33,13 @@ namespace PoGo.NecroBot.Logic.Logging
                             $"NecroBot-{DateTime.Today.ToString("yyyy-MM-dd")}-{DateTime.Now.ToString("HH")}.txt"))
                     )
                 {
-                    foreach (var line in LogbufferList)
+                    foreach (var line in _logbufferList)
                     {
                         log.WriteLine(line);
                     }
                     _lastLogTime = DateTime.Now;
                     log.Flush();
-                    LogbufferList.Clear();
+                    _logbufferList.Clear();
                 }
             }
         }

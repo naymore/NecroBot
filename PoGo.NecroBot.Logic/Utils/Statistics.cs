@@ -19,12 +19,14 @@ using POGOProtos.Networking.Responses;
 
 namespace PoGo.NecroBot.Logic.Utils
 {
+    using POGOProtos.Data.Player;
+
     public delegate void StatisticsDirtyDelegate();
 
     public class Statistics
     {
         private readonly DateTime _initSessionDateTime = DateTime.Now;
-        
+
         private StatsExport _exportStats;
         private string _playerName;
         public int TotalExperience;
@@ -49,78 +51,79 @@ namespace PoGo.NecroBot.Logic.Utils
 
         public StatsExport GetCurrentInfo(Inventory inventory)
         {
-            var stats = inventory.GetPlayerStats().Result;
-            StatsExport output = null;
-            var stat = stats.FirstOrDefault();
-            if (stat != null)
+            PlayerStats playerStats = inventory.GetPlayerStats().Result;
+
+            if (playerStats == null) return null;
+
+            var ep = playerStats.NextLevelXp - playerStats.PrevLevelXp - (playerStats.Experience - playerStats.PrevLevelXp);
+            var time = Math.Round(ep / (TotalExperience / GetRuntime()), 2);
+            var hours = 0.00;
+            var minutes = 0.00;
+            if (double.IsInfinity(time) == false && time > 0)
             {
-                var ep = stat.NextLevelXp - stat.PrevLevelXp - (stat.Experience - stat.PrevLevelXp);
-                var time = Math.Round(ep/(TotalExperience/GetRuntime()), 2);
-                var hours = 0.00;
-                var minutes = 0.00;
-                if (double.IsInfinity(time) == false && time > 0)
-                {
-                    hours = Math.Truncate(TimeSpan.FromHours(time).TotalHours);
-                    minutes = TimeSpan.FromHours(time).Minutes;
-                }
-                
-                if( LevelForRewards == -1 || stat.Level >= LevelForRewards )
-                {
-                    LevelUpRewardsResponse Result = Execute( inventory ).Result;
+                hours = Math.Truncate(TimeSpan.FromHours(time).TotalHours);
+                minutes = TimeSpan.FromHours(time).Minutes;
+            }
 
-                    if( Result.ToString().ToLower().Contains( "awarded_already" ) )
-                        LevelForRewards = stat.Level + 1;
+            if (LevelForRewards == -1 || playerStats.Level >= LevelForRewards)
+            {
+                LevelUpRewardsResponse result = Execute(inventory).Result;
 
-                    if( Result.ToString().ToLower().Contains( "success" ) )
+                if (result.ToString().ToLower().Contains("awarded_already"))
+                    LevelForRewards = playerStats.Level + 1;
+
+                if (result.ToString().ToLower().Contains("success"))
+                {
+                    Logger.Write("Leveled up: " + playerStats.Level, LogLevel.Info);
+
+                    RepeatedField<ItemAward> items = result.ItemsAwarded;
+
+                    if (items.Any<ItemAward>())
                     {
-                        Logger.Write( "Leveled up: " + stat.Level, LogLevel.Info );
-
-                        RepeatedField<ItemAward> items = Result.ItemsAwarded;
-
-                        if( items.Any<ItemAward>() )
+                        Logger.Write("- Received Items -", LogLevel.Info);
+                        foreach (ItemAward item in items)
                         {
-                            Logger.Write( "- Received Items -", LogLevel.Info );
-                            foreach( ItemAward item in items )
-                            {
-                                Logger.Write( $"[ITEM] {item.ItemId} x {item.ItemCount} ", LogLevel.Info );
-                            }
+                            Logger.Write($"[ITEM] {item.ItemId} x {item.ItemCount} ", LogLevel.Info);
                         }
                     }
                 }
-                var Result2 = Execute(inventory).Result;
-                LevelForRewards = stat.Level;
-                if (Result2.ToString().ToLower().Contains("success"))
-                {
-                    string[] tokens = Result2.Result.ToString().Split(new[] { "itemId" }, StringSplitOptions.None);
-                    Logging.Logger.Write("Items Awarded:" + Result2.ItemsAwarded.ToString());
-                }
-                output = new StatsExport
-                {
-                    Level = stat.Level,
-                    HoursUntilLvl = hours,
-                    MinutesUntilLevel = minutes,
-                    CurrentXp = stat.Experience - stat.PrevLevelXp - GetXpDiff(stat.Level),
-                    LevelupXp = stat.NextLevelXp - stat.PrevLevelXp - GetXpDiff(stat.Level)
-                };
             }
+
+            LevelUpRewardsResponse result2 = Execute(inventory).Result;
+            LevelForRewards = playerStats.Level;
+            if (result2.ToString().ToLower().Contains("success"))
+            {
+                //string[] tokens = result2.Result.ToString().Split(new[] { "itemId" }, StringSplitOptions.None);
+                Logger.Write("Items Awarded:" + result2.ItemsAwarded);
+            }
+
+            StatsExport output = new StatsExport
+                                     {
+                                         Level = playerStats.Level,
+                                         HoursUntilLvl = hours,
+                                         MinutesUntilLevel = minutes,
+                                         CurrentXp = playerStats.Experience - playerStats.PrevLevelXp - GetXpDiff(playerStats.Level),
+                                         LevelupXp = playerStats.NextLevelXp - playerStats.PrevLevelXp - GetXpDiff(playerStats.Level)
+                                     };
+
             return output;
         }
 
         public async Task<LevelUpRewardsResponse> Execute(ISession ctx)
         {
-            var Result = await ctx.Inventory.GetLevelUpRewards(LevelForRewards);
-            return Result;
+            var result = await ctx.Inventory.GetLevelUpRewards(LevelForRewards);
+            return result;
         }
 
-        public async Task<LevelUpRewardsResponse> Execute( Inventory inventory )
+        public async Task<LevelUpRewardsResponse> Execute(Inventory inventory)
         {
-            var Result = await inventory.GetLevelUpRewards( inventory );
-            return Result;
+            var result = await inventory.GetLevelUpRewards(inventory);
+            return result;
         }
 
         public double GetRuntime()
         {
-            return (DateTime.Now - _initSessionDateTime).TotalSeconds/3600;
+            return (DateTime.Now - _initSessionDateTime).TotalSeconds / 3600;
         }
 
         public string GetTemplatedStats(string template, string xpTemplate)
@@ -128,8 +131,8 @@ namespace PoGo.NecroBot.Logic.Utils
             var xpStats = string.Format(xpTemplate, _exportStats.Level, _exportStats.HoursUntilLvl,
                 _exportStats.MinutesUntilLevel, _exportStats.CurrentXp, _exportStats.LevelupXp);
 
-            return string.Format(template, _playerName, FormatRuntime(), xpStats, TotalExperience/GetRuntime(),
-                TotalPokemons/GetRuntime(),
+            return string.Format(template, _playerName, FormatRuntime(), xpStats, TotalExperience / GetRuntime(),
+                TotalPokemons / GetRuntime(),
                 TotalStardust, TotalPokemonTransferred, TotalItemsRemoved);
         }
 

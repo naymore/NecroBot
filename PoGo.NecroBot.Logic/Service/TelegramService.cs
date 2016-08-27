@@ -22,6 +22,8 @@ using System.Threading.Tasks;
 
 namespace PoGo.NecroBot.Logic.Service
 {
+    using POGOProtos.Data.Player;
+
     public class TelegramService
     {
         private DateTime _lastLoginTime;
@@ -207,15 +209,14 @@ namespace PoGo.NecroBot.Logic.Service
                     break;
 
                 case "/profile":
-                    var stats = _session.Inventory.GetPlayerStats().Result;
-                    var stat = stats.FirstOrDefault();
+                    PlayerStats playerStats = await _session.Inventory.GetPlayerStats();
 
                     var myPokemons2 = await _session.Inventory.GetPokemons();
-                    if (stat != null)
+                    if (playerStats != null)
                         answerTextmessage += _session.Translation.GetTranslation(
-                            TranslationString.ProfileStatsTemplateString, stat.Level, _session.Profile.PlayerData.Username,
-                            stat.Experience, stat.NextLevelXp, stat.PokemonsCaptured, stat.PokemonDeployed,
-                            stat.PokeStopVisits, stat.EggsHatched, stat.Evolutions, stat.UniquePokedexEntries, stat.KmWalked,
+                            TranslationString.ProfileStatsTemplateString, playerStats.Level, _session.Profile.PlayerData.Username,
+                            playerStats.Experience, playerStats.NextLevelXp, playerStats.PokemonsCaptured, playerStats.PokemonDeployed,
+                            playerStats.PokeStopVisits, playerStats.EggsHatched, playerStats.Evolutions, playerStats.UniquePokedexEntries, playerStats.KmWalked,
                             myPokemons2.ToList().Count, _session.Profile.PlayerData.MaxPokemonStorage);
                     await SendMessage(message.Chat.Id, answerTextmessage);
                     break;

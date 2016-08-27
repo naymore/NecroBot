@@ -17,16 +17,16 @@ using POGOProtos.Inventory.Item;
 
 namespace PoGo.NecroBot.Logic.Tasks
 {
+    using POGOProtos.Data.Player;
+
     public class UseIncubatorsTask
     {
         public static async Task Execute(ISession session, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Refresh inventory so that the player stats are fresh
-            await session.Inventory.RefreshCachedInventory();
+            PlayerStats playerStats = await session.Inventory.GetPlayerStats(refreshCache: true);
 
-            var playerStats = (await session.Inventory.GetPlayerStats()).FirstOrDefault();
             if (playerStats == null)
                 return;
 

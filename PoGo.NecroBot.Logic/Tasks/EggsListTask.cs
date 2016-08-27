@@ -11,14 +11,13 @@ using POGOProtos.Inventory.Item;
 
 namespace PoGo.NecroBot.Logic.Tasks
 {
+    using POGOProtos.Data.Player;
+
     public class EggsListTask
     {
         public static async Task Execute(ISession session)
         {
-            // Refresh inventory so that the player stats are fresh
-            await session.Inventory.RefreshCachedInventory();
-
-            var playerStats = (await session.Inventory.GetPlayerStats()).FirstOrDefault();
+            PlayerStats playerStats = await session.Inventory.GetPlayerStats(refreshCache: true);
             if (playerStats == null)
                 return;
 

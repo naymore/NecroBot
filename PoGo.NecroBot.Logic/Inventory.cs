@@ -85,9 +85,11 @@ namespace PoGo.NecroBot.Logic
                 inventory.InventoryDelta.InventoryItems.Remove(pokemon);
         }
 
-        public async Task<LevelUpRewardsResponse> GetLevelUpRewards(Inventory inv )
+        public async Task<LevelUpRewardsResponse> GetLevelUpRewards(Inventory inventory)
         {
-            return await GetLevelUpRewards(inv.GetPlayerStats().Result.FirstOrDefault().Level);
+            PlayerStats playerStats = await inventory.GetPlayerStats();
+
+            return await GetLevelUpRewards(playerStats.Level);
         }
 
         private async Task<GetInventoryResponse> GetCachedInventory()
@@ -337,12 +339,20 @@ namespace PoGo.NecroBot.Logic
             return result;
         }
 
-        public async Task<IEnumerable<PlayerStats>> GetPlayerStats()
+        public async Task<PlayerStats> GetPlayerStats(bool refreshCache = false)
         {
-            var inventory = await GetCachedInventory();
-            return inventory.InventoryDelta.InventoryItems
-                .Select(i => i.InventoryItemData?.PlayerStats)
-                .Where(p => p != null);
+            GetInventoryResponse inventory = refreshCache 
+                ? await RefreshCachedInventory()
+                : await GetCachedInventory();
+
+            // Interestingly we have to use inventory item delta data and figure out which one has player stats attached? Really? -.-
+            var query = from invItems in inventory.InventoryDelta.InventoryItems
+                        where invItems.InventoryItemData != null && invItems.InventoryItemData.PlayerStats != null
+                        orderby invItems.ModifiedTimestampMs descending
+                        select invItems.InventoryItemData.PlayerStats;
+
+            PlayerStats playerStats = query.FirstOrDefault();
+            return playerStats;
         }
 
         public async Task<UseItemXpBoostResponse> UseLuckyEggConstantly()
