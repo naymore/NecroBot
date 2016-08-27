@@ -1,5 +1,3 @@
-#region using directives
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,80 +10,79 @@ using PoGo.NecroBot.Logic.Event;
 using PoGo.NecroBot.Logic.PoGoUtils;
 using PoGo.NecroBot.Logic.State;
 using POGOProtos.Inventory.Item;
-
-#endregion
+using POGOProtos.Data;
+using POGOProtos.Data.Player;
+using POGOProtos.Inventory;
+using POGOProtos.Networking.Responses;
+using NLog;
 
 namespace PoGo.NecroBot.Logic.Tasks
-{
-    using POGOProtos.Data.Player;
-
-    public class UseIncubatorsTask
+{   
+    public static class UseIncubatorsTask
     {
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
+        private static string _rememberedIncubatorsFilePath;
+        
         public static async Task Execute(ISession session, CancellationToken cancellationToken)
         {
+            _logger.Trace("UseIncubatorsTask called");
+
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (string.IsNullOrEmpty(_rememberedIncubatorsFilePath))
+                _rememberedIncubatorsFilePath = Path.Combine(session.LogicSettings.TempDataDirectory, "incubators.json");
+
+            List<IncubatorUsage> rememberedIncubatorUsages = await CheckForHatchedEggs(session);
+
+            List<IncubatorUsage> newIncubatorUsages = await HatchNewEgg(session);
+
+            if (!newIncubatorUsages.SequenceEqual(rememberedIncubatorUsages))
+                SaveRememberedIncubators(newIncubatorUsages);
+
+            _logger.Trace("UseIncubatorsTask completed");
+        }
+
+        private static async Task<List<IncubatorUsage>> HatchNewEgg(ISession session)
+        {
+            _logger.Debug("Hatching new egg?");
+
             PlayerStats playerStats = await session.Inventory.GetPlayerStats(refreshCache: true);
+            //if (playerStats == null) return null; // can this ever be null?
 
-            if (playerStats == null)
-                return;
+            List<EggIncubator> incubators =
+                (await session.Inventory.GetEggIncubators()).Where(incubator => incubator.UsesRemaining > 0 || incubator.ItemId == ItemId.ItemIncubatorBasicUnlimited).ToList();
 
-            var kmWalked = playerStats.KmWalked;
+            EggIncubator unlimitedIncu = incubators.SingleOrDefault(inc => inc.ItemId == ItemId.ItemIncubatorBasicUnlimited);
+            _logger.Info("Fun fact => unlimited incu has {0} uses remaining.", unlimitedIncu.UsesRemaining);
 
-            var incubators = (await session.Inventory.GetEggIncubators())
-                .Where(x => x.UsesRemaining > 0 || x.ItemId == ItemId.ItemIncubatorBasicUnlimited)
-                .OrderByDescending(x => x.ItemId == ItemId.ItemIncubatorBasicUnlimited)
-                .ToList();
+            _logger.Debug("Incubators :: Count {0}, Total Remaining Usages {1}", incubators.Count, incubators.Sum(incubator => incubator.UsesRemaining)); // what count does an unlimited incubator have?
 
-            var unusedEggs = (await session.Inventory.GetEggs())
-                .Where(x => string.IsNullOrEmpty(x.EggIncubatorId))
-                .OrderBy(x => x.EggKmWalkedTarget - x.EggKmWalkedStart)
-                .ToList();
+            List<PokemonData> unusedEggs =
+                (await session.Inventory.GetEggs()).Where(egg => string.IsNullOrEmpty(egg.EggIncubatorId))
+                    .OrderBy(egg => egg.EggKmWalkedTarget - egg.EggKmWalkedStart)
+                    .ToList();
 
-            var rememberedIncubatorsFilePath = Path.Combine(session.LogicSettings.TempDataDirectory, "incubators.json");
-            var rememberedIncubators = GetRememberedIncubators(rememberedIncubatorsFilePath);
-            var pokemons = (await session.Inventory.GetPokemons()).ToList();
+            List<IncubatorUsage> newRememberedIncubators = new List<IncubatorUsage>();
 
-            // Check if eggs in remembered incubator usages have since hatched
-            // (instead of calling session.Client.Inventory.GetHatchedEgg(), which doesn't seem to work properly)
-            foreach (var incubator in rememberedIncubators)
+            foreach (EggIncubator incubator in incubators)
             {
-                var hatched = pokemons.FirstOrDefault(x => !x.IsEgg && x.Id == incubator.PokemonId);
-                if (hatched == null) continue;
-
-                session.EventDispatcher.Send(new EggHatchedEvent
-                {
-                    Id = hatched.Id,
-                    PokemonId = hatched.PokemonId,
-                    Level = PokemonInfo.GetLevel(hatched),
-                    Cp = hatched.Cp,
-                    MaxCp = PokemonInfo.CalculateMaxCp(hatched),
-                    Perfection = Math.Round(PokemonInfo.CalculatePokemonPerfection(hatched), 2)
-                });
-            }
-
-            var newRememberedIncubators = new List<IncubatorUsage>();
-
-            foreach (var incubator in incubators)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 if (incubator.PokemonId == 0)
                 {
                     // Unlimited incubators prefer short eggs, limited incubators prefer long eggs
                     // Special case: If only one incubator is available at all, it will prefer long eggs
-                    var egg = (incubator.ItemId == ItemId.ItemIncubatorBasicUnlimited && incubators.Count > 1)
+                    PokemonData egg = incubator.ItemId == ItemId.ItemIncubatorBasicUnlimited && incubators.Count > 1
                         ? unusedEggs.FirstOrDefault()
                         : unusedEggs.LastOrDefault();
 
                     if (egg == null)
                         continue;
 
-                    //avoid using 2/5 km eggs with limited incubator
-                    if (egg.EggKmWalkedTarget < session.LogicSettings.UseEggIncubatorMinKm && incubator.ItemId != ItemId.ItemIncubatorBasicUnlimited)
+                    // avoid using 2/5 km eggs with limited incubator - except if at least 1 use with limited incubators are left
+                    if (egg.EggKmWalkedTarget < session.LogicSettings.UseEggIncubatorMinKm) // && incubator.ItemId != ItemId.ItemIncubatorBasicUnlimited
                         continue;
 
-                    var response = await session.Client.Inventory.UseItemEggIncubator(incubator.Id, egg.Id);
+                    UseItemEggIncubatorResponse response = await session.Client.Inventory.UseItemEggIncubator(incubator.Id, egg.Id);
                     unusedEggs.Remove(egg);
 
                     newRememberedIncubators.Add(new IncubatorUsage { IncubatorId = incubator.Id, PokemonId = egg.Id });
@@ -96,7 +93,7 @@ namespace PoGo.NecroBot.Logic.Tasks
                         WasAddedNow = true,
                         PokemonId = egg.Id,
                         KmToWalk = egg.EggKmWalkedTarget,
-                        KmRemaining = response.EggIncubator.TargetKmWalked - kmWalked
+                        KmRemaining = response.EggIncubator.TargetKmWalked - playerStats.KmWalked
                     });
                 }
                 else
@@ -112,17 +109,50 @@ namespace PoGo.NecroBot.Logic.Tasks
                         IncubatorId = incubator.Id,
                         PokemonId = incubator.PokemonId,
                         KmToWalk = incubator.TargetKmWalked - incubator.StartKmWalked,
-                        KmRemaining = incubator.TargetKmWalked - kmWalked
+                        KmRemaining = incubator.TargetKmWalked - playerStats.KmWalked
                     });
                 }
             }
 
-            if (!newRememberedIncubators.SequenceEqual(rememberedIncubators))
-                SaveRememberedIncubators(newRememberedIncubators, rememberedIncubatorsFilePath);
+            return newRememberedIncubators;
+        }
+
+        private static async Task<List<IncubatorUsage>> CheckForHatchedEggs(ISession session)
+        {
+            _logger.Debug("Checking for previously hatched eggs...");
+
+            // Check if eggs in remembered incubator usages have since hatched
+            // (instead of calling session.Client.Inventory.GetHatchedEgg(), which doesn't seem to work properly)
+            List<IncubatorUsage> rememberedIncubators = GetRememberedIncubators(_rememberedIncubatorsFilePath);
+            List<PokemonData> pokemons = (await session.Inventory.GetPokemons()).ToList();
+
+            foreach (IncubatorUsage incubatorUsage in rememberedIncubators)
+            {
+                PokemonData hatchedPkmn = pokemons.FirstOrDefault(pkmn => !pkmn.IsEgg && pkmn.Id == incubatorUsage.PokemonId);
+                if (hatchedPkmn == null)
+                {
+                    _logger.Trace("Incubator {0}. Previously remembered pokemon {1} has not hatched yet.", incubatorUsage.IncubatorId, incubatorUsage.PokemonId);
+                    continue;
+                }
+
+                session.EventDispatcher.Send(new EggHatchedEvent
+                {
+                    Id = hatchedPkmn.Id,
+                    PokemonId = hatchedPkmn.PokemonId,
+                    Level = PokemonInfo.GetLevel(hatchedPkmn),
+                    Cp = hatchedPkmn.Cp,
+                    MaxCp = PokemonInfo.CalculateMaxCp(hatchedPkmn),
+                    Perfection = Math.Round(PokemonInfo.CalculatePokemonPerfection(hatchedPkmn), 2)
+                });
+            }
+
+            return rememberedIncubators;
         }
 
         private static List<IncubatorUsage> GetRememberedIncubators(string filePath)
         {
+            _logger.Trace("Loading incubator usages from local file");
+
             string directoryName = Path.GetDirectoryName(filePath);
 
             if (!string.IsNullOrEmpty(directoryName))
@@ -136,11 +166,14 @@ namespace PoGo.NecroBot.Logic.Tasks
             return new List<IncubatorUsage>(0);
         }
 
-        private static void SaveRememberedIncubators(List<IncubatorUsage> incubators, string filePath)
+        private static void SaveRememberedIncubators(List<IncubatorUsage> incubators)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            _logger.Trace("Saving incubator usages to local file");
+            if (string.IsNullOrEmpty(_rememberedIncubatorsFilePath)) return;
 
-            File.WriteAllText(filePath, JsonConvert.SerializeObject(incubators), Encoding.UTF8);
+            Directory.CreateDirectory(Path.GetDirectoryName(_rememberedIncubatorsFilePath));
+
+            File.WriteAllText(_rememberedIncubatorsFilePath, JsonConvert.SerializeObject(incubators), Encoding.UTF8);
         }
 
         private class IncubatorUsage : IEquatable<IncubatorUsage>
