@@ -234,9 +234,12 @@ namespace PoGo.NecroBot.CLI
 
             var aggregator = new StatisticsAggregator(stats);
             var listener = new ConsoleEventListener();
+            var snipeEventListener = new SniperEventListener();
 
             session.EventDispatcher.EventReceived += evt => listener.Listen(evt, session);
             session.EventDispatcher.EventReceived += evt => aggregator.Listen(evt, session);
+            session.EventDispatcher.EventReceived += evt => snipeEventListener.Listen(evt, session);
+
             if (settings.WebsocketsConfig.UseWebsocket)
             {
                 var websocket = new WebSocketInterface(settings.WebsocketsConfig.WebSocketIpAddress, settings.WebsocketsConfig.WebSocketPort, session);

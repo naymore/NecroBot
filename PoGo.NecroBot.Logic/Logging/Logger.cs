@@ -90,7 +90,7 @@ namespace PoGo.NecroBot.Logic.Logging
             {
                 if (level == LogLevel.Debug)
                 {
-                    Log(string.Concat($"[{DateTime.Now.ToString("HH:mm:ss.fff")}] ", message), force);
+                    Log(string.Concat($"[{DateTime.Now.ToString("HH:mm:ss")}] ", message), force);
                 }
                 else
                 {
