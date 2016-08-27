@@ -353,7 +353,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             }
             catch (Exception ex)
             {
-                Logger.Write("Error loading data", LogLevel.Error, ConsoleColor.DarkRed);
+                Logger.Write("Error loading RarePokemonInfo (pokeradar): " + ex, LogLevel.Error, ConsoleColor.DarkRed);
             }
             return results;
         }
@@ -384,7 +384,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             }
             catch (Exception ex)
             {
-
+                Logger.Write("Error loading RarePokemonInfo (skiplagged): " + ex, LogLevel.Error, ConsoleColor.DarkRed);
             }
             return results;
         }
