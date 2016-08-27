@@ -232,12 +232,12 @@ namespace PoGo.NecroBot.CLI
                             session.Translation.GetTranslation(TranslationString.StatsTemplateString),
                             session.Translation.GetTranslation(TranslationString.StatsXpTemplateString));
 
-            var aggregator = new StatisticsAggregator(stats);
-            var listener = new ConsoleEventListener();
-            var snipeEventListener = new SniperEventListener();
+            StatisticsAggregatorEventListener statisticsAggregatorEventListenerEventListener = new StatisticsAggregatorEventListener(stats);
+            ConsoleEventListener consoleEventListener = new ConsoleEventListener();
+            SniperEventListener snipeEventListener = new SniperEventListener();
 
-            session.EventDispatcher.EventReceived += evt => listener.Listen(evt, session);
-            session.EventDispatcher.EventReceived += evt => aggregator.Listen(evt, session);
+            session.EventDispatcher.EventReceived += evt => consoleEventListener.Listen(evt, session);
+            session.EventDispatcher.EventReceived += evt => statisticsAggregatorEventListenerEventListener.Listen(evt, session);
             session.EventDispatcher.EventReceived += evt => snipeEventListener.Listen(evt, session);
 
             if (settings.WebsocketsConfig.UseWebsocket)

@@ -9,11 +9,11 @@ using POGOProtos.Networking.Responses;
 
 namespace PoGo.NecroBot.Logic
 {
-    public class StatisticsAggregator
+    public class StatisticsAggregatorEventListener
     {
         private readonly Statistics _stats;
 
-        public StatisticsAggregator(Statistics stats)
+        public StatisticsAggregatorEventListener(Statistics stats)
         {
             _stats = stats;
         }
@@ -29,7 +29,7 @@ namespace PoGo.NecroBot.Logic
             catch
             {
                 // NOTE: Missing signatures will cause exceptions to be thrown. If you add events make sure you add them to all subscribers
-                // such as StatisticsAggregator, ConsoleEventListener and WebSocketInterface (these are the ones I know of)
+                // such as StatisticsAggregatorEventListener, ConsoleEventListener and WebSocketInterface (these are the ones I know of)
                 // -OR- add a generic handler with dynamic signature. FWIW: IEvent to dynamic is bad design after all.
             }
         }

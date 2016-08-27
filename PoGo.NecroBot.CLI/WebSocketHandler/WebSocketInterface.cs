@@ -148,7 +148,7 @@ namespace PoGo.NecroBot.CLI.WebSocketHandler
                 throw;
 
                 // NOTE: Missing signatures will cause exceptions to be thrown. If you add events make sure you add them to all subscribers
-                // such as StatisticsAggregator, ConsoleEventListener and WebSocketInterface (these are the ones I know of)
+                // such as StatisticsAggregatorEventListener, ConsoleEventListener and WebSocketInterface (these are the ones I know of)
                 // -OR- add a generic handler with dynamic signature. FWIW: IEvent to dynamic is bad design after all.
             }
 
