@@ -53,10 +53,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             List<EggIncubator> incubators =
                 (await session.Inventory.GetEggIncubators()).Where(incubator => incubator.UsesRemaining > 0 || incubator.ItemId == ItemId.ItemIncubatorBasicUnlimited).ToList();
 
-            EggIncubator unlimitedIncu = incubators.SingleOrDefault(inc => inc.ItemId == ItemId.ItemIncubatorBasicUnlimited);
-            _logger.Info("Fun fact => unlimited incu has {0} uses remaining.", unlimitedIncu.UsesRemaining);
-
-            _logger.Debug("Incubators :: Count {0}, Total Remaining Usages {1}", incubators.Count, incubators.Sum(incubator => incubator.UsesRemaining)); // what count does an unlimited incubator have?
+            _logger.Debug("Incubators :: Count {0}, Total Remaining Usages {1}", incubators.Count, incubators.Sum(incubator => incubator.UsesRemaining));
 
             List<PokemonData> unusedEggs =
                 (await session.Inventory.GetEggs()).Where(egg => string.IsNullOrEmpty(egg.EggIncubatorId))
