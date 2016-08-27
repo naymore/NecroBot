@@ -18,43 +18,38 @@ using SuperSocket.WebSocket;
 
 namespace PoGo.NecroBot.CLI
 {
-    public class WebSocketInterface
+    using System.Threading.Tasks;
+
+    public class WebSocketInterface : IDisposable
     {
+        private readonly WebSocketEventManager _websocketHandler;
         private readonly WebSocketServer _server;
         private readonly Session _session;
         private PokeStopListEvent _lastPokeStopList;
         private ProfileEvent _lastProfile;
-        private WebSocketEventManager _websocketHandler;
 
-        public WebSocketInterface(int port, Session session)
+        public WebSocketInterface(string ipAddress, int port, Session session)
         {
             _session = session;
-            var translations = session.Translation;
             _server = new WebSocketServer();
             _websocketHandler = WebSocketEventManager.CreateInstance();
-            var config = new ServerConfig
-            {
-                Name = "NecroWebSocket",
-                Mode = SocketMode.Tcp,
-                Certificate = new CertificateConfig
-                {
-                    FilePath = @"cert.pfx",
-                    Password = "necro"
-                },
-            };
-            config.Listeners = new List<ListenerConfig>
-            {
-                new ListenerConfig()
-                {
-                    Ip = "Any", Port = port, Security = "tls"
-                },
-                new ListenerConfig()
-                {
-                    Ip = "Any", Port = port + 1, Security = "none"
-                }
-            };
 
-            var setupComplete = _server.Setup(config);
+            ITranslation translations = session.Translation;
+
+            ServerConfig config = new ServerConfig
+                             {
+                                 Name = "NecroWebSocket",
+                                 Mode = SocketMode.Tcp,
+                                 Certificate = new CertificateConfig { FilePath = @"cert.pfx", Password = "necro" },
+                                 Listeners =
+                                     new List<ListenerConfig>
+                                         {
+                                             new ListenerConfig { Ip = ipAddress, Port = port, Security = "tls" },
+                                             new ListenerConfig { Ip = ipAddress, Port = port + 1, Security = "none" }
+                                         },
+                             };
+
+            bool setupComplete = _server.Setup(config);
 
             if (setupComplete == false)
             {
@@ -112,7 +107,7 @@ namespace PoGo.NecroBot.CLI
             try
             {
                 dynamic decodedMessage = JObject.Parse(message);
-                var handle = _websocketHandler?.Handle(_session, session, decodedMessage);
+                Task handle = _websocketHandler?.Handle(_session, session, decodedMessage);
                 if (handle != null)
                     await handle;
             }
@@ -132,13 +127,13 @@ namespace PoGo.NecroBot.CLI
 
             try
             {
-                session.Send(Serialize(new UpdatePositionEvent()
-                {
-                    Latitude = _session.Client.CurrentLatitude,
-                    Longitude = _session.Client.CurrentLongitude
-                }));
+                session.Send(
+                    Serialize(new UpdatePositionEvent() { Latitude = _session.Client.CurrentLatitude, Longitude = _session.Client.CurrentLongitude }));
             }
-            catch { }
+            catch
+            {
+                // ignnored
+            }
         }
 
         public void Listen(IEvent evt, Session session)
@@ -166,24 +161,22 @@ namespace PoGo.NecroBot.CLI
 
             return JsonConvert.SerializeObject(evt, Formatting.None, jsonSerializerSettings);
         }
-    }
 
-    public class IdToStringConverter : JsonConverter
-    {
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        #region -- IDisposable --
+
+        public void Dispose()
         {
-            JToken jt = JValue.ReadFrom(reader);
-            return jt.Value<long>();
+            Dispose(true);
         }
 
-        public override bool CanConvert(Type objectType)
+        protected virtual void Dispose(bool disposing)
         {
-            return typeof(System.Int64).Equals(objectType) || typeof(ulong).Equals(objectType);
+            if (disposing)
+            {
+                _server?.Dispose();
+            }
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            serializer.Serialize(writer, value.ToString());
-        }
+        #endregion
     }
 }

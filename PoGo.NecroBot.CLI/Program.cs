@@ -4,10 +4,8 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using System.Threading;
-using PoGo.NecroBot.CLI.Resources;
 using PoGo.NecroBot.Logic;
 using PoGo.NecroBot.Logic.Common;
 using PoGo.NecroBot.Logic.Event;
@@ -27,15 +25,16 @@ namespace PoGo.NecroBot.CLI
     {
         private static readonly ManualResetEvent QuitEvent = new ManualResetEvent(false);
         private static string subPath = "";
-        private static Uri strKillSwitchUri = new Uri("https://raw.githubusercontent.com/NoxxDev/NecroBot/master/KillSwitch.txt");
         private static Session session = null;
         private static double Lat, Lng;
         private static bool LocUpdate = false;
+
         [System.Runtime.InteropServices.DllImport("Kernel32")]
         private static extern bool SetConsoleCtrlHandler(EventHandler handler, bool add);
 
         private delegate bool EventHandler(CtrlType sig);
-        static EventHandler _handler;
+        private static EventHandler _handler;
+
         enum CtrlType
         {
             CTRL_C_EVENT = 0,
@@ -47,15 +46,9 @@ namespace PoGo.NecroBot.CLI
 
         private static void Main(string[] args)
         {
-
-            string strCulture = Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
-
-            var culture = CultureInfo.CreateSpecificCulture("en");
-            CultureInfo.DefaultThreadCurrentCulture = culture;
-            Thread.CurrentThread.CurrentCulture = culture;
-
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionEventHandler;
             AppDomain.CurrentDomain.ProcessExit += OnExitHandler;
+
             _handler += new EventHandler(OnExit);
             SetConsoleCtrlHandler(_handler, true);
 
@@ -65,21 +58,28 @@ namespace PoGo.NecroBot.CLI
                 QuitEvent.Set();
                 eArgs.Cancel = true;
             };
+
             if (args.Length > 0)
                 subPath = args[0];
 
             Logger.SetLogger(new ConsoleLogger(LogLevel.LevelUp), subPath);
 
-            if (CheckKillSwitch())
-                return;
+            bool isKillSwitchActive = KillSwitch.IsKillSwitchActive();
+            if (isKillSwitchActive) return;
 
             var profilePath = Path.Combine(Directory.GetCurrentDirectory(), subPath);
             var profileConfigPath = Path.Combine(profilePath, "config");
             var configFile = Path.Combine(profileConfigPath, "config.json");
 
-            GlobalSettings settings;
-            Boolean boolNeedsSetup = false;
+            string strCulture = Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
 
+            CultureInfo culture = CultureInfo.CreateSpecificCulture("en");
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            Thread.CurrentThread.CurrentCulture = culture;
+
+            GlobalSettings settings;
+            bool boolNeedsSetup = false;
+            
             if (File.Exists(configFile))
             {
                 // Load the settings from the config file
@@ -195,10 +195,7 @@ namespace PoGo.NecroBot.CLI
 
             }
 
-            ProgressBar.start("NecroBot is starting up", 10);
-
             session.Client.ApiFailure = new ApiFailureStrategy(session);
-            ProgressBar.fill(20);
 
             /*SimpleSession session = new SimpleSession
             {
@@ -219,7 +216,6 @@ namespace PoGo.NecroBot.CLI
             var machine = new StateMachine();
             var stats = new Statistics();
 
-            ProgressBar.fill(30);
             string strVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
             stats.DirtyEvent +=
                 () =>
@@ -227,33 +223,24 @@ namespace PoGo.NecroBot.CLI
                         stats.GetTemplatedStats(
                             session.Translation.GetTranslation(TranslationString.StatsTemplateString),
                             session.Translation.GetTranslation(TranslationString.StatsXpTemplateString));
-            ProgressBar.fill(40);
 
             var aggregator = new StatisticsAggregator(stats);
-            ProgressBar.fill(50);
             var listener = new ConsoleEventListener();
-            ProgressBar.fill(60);
 
             session.EventDispatcher.EventReceived += evt => listener.Listen(evt, session);
             session.EventDispatcher.EventReceived += evt => aggregator.Listen(evt, session);
             if (settings.WebsocketsConfig.UseWebsocket)
             {
-                var websocket = new WebSocketInterface(settings.WebsocketsConfig.WebSocketPort, session);
+                var websocket = new WebSocketInterface(settings.WebsocketsConfig.WebSocketIpAddress, settings.WebsocketsConfig.WebSocketPort, session);
                 session.EventDispatcher.EventReceived += evt => websocket.Listen(evt, session);
             }
 
-            ProgressBar.fill(70);
-
             machine.SetFailureState(new LoginState());
-            ProgressBar.fill(80);
 
             Logger.SetLoggerContext(session);
-            ProgressBar.fill(90);
 
             session.Navigation.WalkStrategy.UpdatePositionEvent += (lat, lng) => session.EventDispatcher.Send(new UpdatePositionEvent { Latitude = lat, Longitude = lng });
             session.Navigation.WalkStrategy.UpdatePositionEvent += (lat, lng) => { LocUpdate = true; Lat = lat; Lng = lng; };
-
-            ProgressBar.fill(100);
 
             machine.AsyncStart(new VersionCheckState(), session, subPath);
 
@@ -302,48 +289,10 @@ namespace PoGo.NecroBot.CLI
                 File.WriteAllLines(path, fileContent.ToArray());
         }
 
-        private static bool CheckKillSwitch()
-        {
-            using (var wC = new WebClient())
-            {
-                try
-                {
-                    string strResponse = WebClientExtensions.DownloadString(wC, strKillSwitchUri);
-
-                    if (strResponse == null)
-                        return false;
-
-                    string[] strSplit = strResponse.Split(';');
-
-                    if (strSplit.Length > 1)
-                    {
-                        string strStatus = strSplit[0];
-                        string strReason = strSplit[1];
-
-                        if (strStatus.ToLower().Contains("disable"))
-                        {
-                            Console.WriteLine(strReason + "\n");
-
-                            Logger.Write("The bot will now close, please press enter to continue", LogLevel.Error);
-                            Console.ReadLine();
-                            return true;
-                        }
-                    }
-                    else
-                        return false;
-                }
-                catch (WebException)
-                {
-                }
-            }
-
-            return false;
-        }
-
         private static void UnhandledExceptionEventHandler(object obj, UnhandledExceptionEventArgs args)
         {
             Logger.Write("Exception caught, writing LogBuffer.", force: true);
-            throw new Exception();
+            throw new Exception("Unhandled Exception occured", args.ExceptionObject as Exception);
         }
 
         // Lets save my SSD...
