@@ -24,6 +24,7 @@ using POGOProtos.Map.Pokemon;
 using POGOProtos.Networking.Responses;
 using Quobject.SocketIoClientDotNet.Client;
 using GeoCoordinatePortable;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.Utils;
 
 #endregion

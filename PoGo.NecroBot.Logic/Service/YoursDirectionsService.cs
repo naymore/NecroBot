@@ -3,6 +3,7 @@ using PoGo.NecroBot.Logic.State;
 using System;
 using System.IO;
 using System.Net;
+using PoGo.NecroBot.Logic.Interfaces;
 
 namespace PoGo.NecroBot.Logic.Service
 {

@@ -1,16 +1,12 @@
-﻿#region using directives
-
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using PoGo.NecroBot.Logic.Event;
-using PoGo.NecroBot.Logic.State;
+using PoGo.NecroBot.Logic.Interfaces;
 using PokemonGo.RocketAPI.Enums;
 using PokemonGo.RocketAPI.Exceptions;
 using PokemonGo.RocketAPI.Extensions;
 using POGOProtos.Networking.Envelopes;
 using POGOProtos.Networking.Requests;
-
-#endregion
 
 namespace PoGo.NecroBot.Logic.Common
 {
@@ -49,7 +45,7 @@ namespace PoGo.NecroBot.Logic.Common
         {
             try
             {
-                if (_session.Settings.AuthType == AuthType.Google || _session.Settings.AuthType == AuthType.Ptc)
+                if (_session.ClientSettings.AuthType == AuthType.Google || _session.ClientSettings.AuthType == AuthType.Ptc)
                 {
                     await _session.Client.Login.DoLogin();
                 }

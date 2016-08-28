@@ -1,11 +1,7 @@
-﻿#region using directives
-
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 
-#endregion
-
-namespace PoGo.NecroBot.Logic.State
+namespace PoGo.NecroBot.Logic.Interfaces
 {
     public interface IState
     {

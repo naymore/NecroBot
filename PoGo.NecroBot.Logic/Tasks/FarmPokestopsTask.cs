@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using GeoCoordinatePortable;
 using PoGo.NecroBot.Logic.Common;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Utils;
 using PoGo.NecroBot.Logic.Logging;
@@ -20,7 +21,7 @@ namespace PoGo.NecroBot.Logic.Tasks
             cancellationToken.ThrowIfCancellationRequested();
 
             double distanceFromStart = LocationUtils.CalculateDistanceInMeters(
-                session.Settings.DefaultLatitude, session.Settings.DefaultLongitude, session.Client.CurrentLatitude, session.Client.CurrentLongitude);
+                session.ClientSettings.DefaultLatitude, session.ClientSettings.DefaultLongitude, session.Client.CurrentLatitude, session.Client.CurrentLongitude);
 
             // Edge case for when the client somehow ends up outside the defined radius
             if (session.LogicSettings.MaxTravelDistanceInMeters != 0 && _firstStart &&
@@ -35,10 +36,10 @@ namespace PoGo.NecroBot.Logic.Tasks
                 var eggWalker = new EggWalker(1000, session);
 
                 await session.Navigation.Move(new GeoCoordinate(
-                    session.Settings.DefaultLatitude,
-                    session.Settings.DefaultLongitude,
-                    LocationUtils.getElevation(session, session.Settings.DefaultLatitude,
-                    session.Settings.DefaultLongitude)),
+                    session.ClientSettings.DefaultLatitude,
+                    session.ClientSettings.DefaultLongitude,
+                    LocationUtils.getElevation(session, session.ClientSettings.DefaultLatitude,
+                    session.ClientSettings.DefaultLongitude)),
                     null,
                     session,
                     cancellationToken);

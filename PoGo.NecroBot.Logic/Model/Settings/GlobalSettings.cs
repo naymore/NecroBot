@@ -467,7 +467,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             return newSession;
         }
 
-        private static Session SetupTranslationCode(Session session, ITranslation translator, GlobalSettings settings)
+        private static Session SetupTranslationCode(Session session, ITranslation translator, GlobalSettings globalSettings)
         {
             Logger.Write(translator.GetTranslation(TranslationString.FirstStartLanguagePrompt, "Y", "N"), LogLevel.None);
             string strInput;
@@ -475,9 +475,15 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             bool boolBreak = false;
             while (!boolBreak)
             {
-                strInput = Console.ReadLine().ToLower();
+                strInput = Console.ReadLine();
 
-                switch (strInput)
+                if (string.IsNullOrWhiteSpace(strInput))
+                {
+                    Logger.Write(translator.GetTranslation(TranslationString.PromptError, "y", "n"), LogLevel.Error);
+                    continue;
+                }
+                
+                switch (strInput.ToLowerInvariant())
                 {
                     case "y":
                         boolBreak = true;
@@ -493,9 +499,16 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             Logger.Write(translator.GetTranslation(TranslationString.FirstStartLanguageCodePrompt));
             strInput = Console.ReadLine();
 
-            settings.ConsoleConfig.TranslationLanguageCode = strInput;
-            session = new Session(new ClientSettings(settings), new LogicSettings(settings));
-            translator = session.Translation;
+            globalSettings.ConsoleConfig.TranslationLanguageCode = strInput;
+
+            // create new session
+            ClientSettings clientSettings = new ClientSettings(globalSettings);
+            LogicSettings logicSettings = new LogicSettings(globalSettings);
+            Translation translation = Translation.Load(logicSettings);
+            
+            session = new Session(clientSettings, logicSettings, translation);
+
+            translator = session.Translation; // TODO: I've never seen this before. Ommit?
             Logger.Write(translator.GetTranslation(TranslationString.FirstStartLanguageConfirm, strInput));
 
             return session;

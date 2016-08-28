@@ -1,6 +1,7 @@
 ﻿#region using directives
 
 using PoGo.NecroBot.Logic.Event;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Utils;
 using POGOProtos.Networking.Responses;

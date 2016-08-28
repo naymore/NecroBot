@@ -296,6 +296,7 @@
     <Compile Include="Service\TelegramService.cs" />
     <Compile Include="Model\Settings\LogicSettings.cs" />
     <Compile Include="Service\YoursDirectionsService.cs" />
+    <Compile Include="Interfaces\ISession.cs" />
     <Compile Include="State\SessionStats.cs" />
     <Compile Include="Strategies\Walk\BaseWalkStrategy.cs" />
     <Compile Include="Strategies\Walk\FlyStrategy.cs" />
@@ -325,7 +326,7 @@
     <Compile Include="Tasks\DisplayPokemonStatsTask.cs" />
     <Compile Include="Tasks\EvolvePokemonTask.cs" />
     <Compile Include="Event\IEvent.cs" />
-    <Compile Include="State\IState.cs" />
+    <Compile Include="Interfaces\IState.cs" />
     <Compile Include="State\LoginState.cs" />
     <Compile Include="Event\NoticeEvent.cs" />
     <Compile Include="Event\PokemonEvolveEvent.cs" />

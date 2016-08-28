@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using GeoCoordinatePortable;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.Service;
 using PoGo.NecroBot.Logic.State;
 

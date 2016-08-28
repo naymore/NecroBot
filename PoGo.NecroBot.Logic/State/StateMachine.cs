@@ -1,15 +1,12 @@
-﻿#region using directives
-
-using System;
+﻿using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using PoGo.NecroBot.Logic.Event;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.Logging;
 using PoGo.NecroBot.Logic.Model.Settings;
 using PokemonGo.RocketAPI.Exceptions;
-
-#endregion
 
 namespace PoGo.NecroBot.Logic.State
 {
@@ -41,7 +38,10 @@ namespace PoGo.NecroBot.Logic.State
             {
                 if (e.ChangeType == WatcherChangeTypes.Changed)
                 {
-                    session.LogicSettings = new LogicSettings(GlobalSettings.Load(workingDirectory));
+                    // reload LogicSettings
+                    LogicSettings newLogicSettings = new LogicSettings(GlobalSettings.Load(workingDirectory));
+                    session.UpdateLogicSettings(newLogicSettings);
+
                     configWatcher.EnableRaisingEvents = !configWatcher.EnableRaisingEvents;
                     configWatcher.EnableRaisingEvents = !configWatcher.EnableRaisingEvents;
 

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Google.Protobuf;
 using PoGo.NecroBot.Logic.Common;
 using PoGo.NecroBot.Logic.Event;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.Logging;
 using PokemonGo.RocketAPI.Enums;
 using PokemonGo.RocketAPI.Exceptions;
@@ -23,14 +24,14 @@ namespace PoGo.NecroBot.Logic.State
 
             session.EventDispatcher.Send(new NoticeEvent
             {
-                Message = session.Translation.GetTranslation(TranslationString.LoggingIn, session.Settings.AuthType)
+                Message = session.Translation.GetTranslation(TranslationString.LoggingIn, session.ClientSettings.AuthType)
             });
 
             await CheckLogin(session, cancellationToken);
 
             try
             {
-                if (session.Settings.AuthType == AuthType.Google || session.Settings.AuthType == AuthType.Ptc)
+                if (session.ClientSettings.AuthType == AuthType.Google || session.ClientSettings.AuthType == AuthType.Ptc)
                 {
                     await session.Client.Login.DoLogin();
                 }
@@ -152,8 +153,8 @@ namespace PoGo.NecroBot.Logic.State
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (session.Settings.AuthType == AuthType.Google &&
-                (session.Settings.GoogleUsername == null || session.Settings.GooglePassword == null))
+            if (session.ClientSettings.AuthType == AuthType.Google &&
+                (session.ClientSettings.GoogleUsername == null || session.ClientSettings.GooglePassword == null))
             {
                 session.EventDispatcher.Send(new ErrorEvent
                 {
@@ -162,8 +163,8 @@ namespace PoGo.NecroBot.Logic.State
                 await Task.Delay(2000, cancellationToken);
                 Environment.Exit(0);
             }
-            else if (session.Settings.AuthType == AuthType.Ptc &&
-                     (session.Settings.PtcUsername == null || session.Settings.PtcPassword == null))
+            else if (session.ClientSettings.AuthType == AuthType.Ptc &&
+                     (session.ClientSettings.PtcUsername == null || session.ClientSettings.PtcPassword == null))
             {
                 session.EventDispatcher.Send(new ErrorEvent
                 {

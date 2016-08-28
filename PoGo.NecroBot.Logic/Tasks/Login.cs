@@ -3,6 +3,7 @@
 using System;
 using PoGo.NecroBot.Logic.Common;
 using PoGo.NecroBot.Logic.Event;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.State;
 using PokemonGo.RocketAPI.Enums;
 using PokemonGo.RocketAPI.Exceptions;
@@ -29,7 +30,7 @@ namespace PoGo.NecroBot.Logic.Tasks
         {
             try
             {
-                if (_session.Settings.AuthType != AuthType.Google || _session.Settings.AuthType != AuthType.Ptc)
+                if (_session.ClientSettings.AuthType != AuthType.Google || _session.ClientSettings.AuthType != AuthType.Ptc)
                 {
                     await _session.Client.Login.DoLogin();
                 }

@@ -10,6 +10,7 @@ using PoGo.NecroBot.Logic.Utils;
 using POGOProtos.Data;
 using POGOProtos.Inventory.Item;
 using NLog;
+using PoGo.NecroBot.Logic.Interfaces;
 
 namespace PoGo.NecroBot.Logic.Tasks
 {

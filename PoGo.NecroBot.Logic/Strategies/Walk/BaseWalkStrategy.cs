@@ -10,6 +10,7 @@ using System.Threading;
 using PokemonGo.RocketAPI;
 using PoGo.NecroBot.Logic.Interfaces.Configuration;
 using PoGo.NecroBot.Logic.Event;
+using PoGo.NecroBot.Logic.Interfaces;
 
 namespace PoGo.NecroBot.Logic.Strategies.Walk
 {

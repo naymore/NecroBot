@@ -10,6 +10,7 @@ using PoGo.NecroBot.Logic.PoGoUtils;
 using PoGo.NecroBot.Logic.State;
 using System.Globalization;
 using System.Threading;
+using PoGo.NecroBot.Logic.Interfaces;
 
 #endregion
 

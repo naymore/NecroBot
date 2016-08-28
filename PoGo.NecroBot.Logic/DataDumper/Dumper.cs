@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using PoGo.NecroBot.Logic.State;
 using System.Globalization;
+using PoGo.NecroBot.Logic.Interfaces;
 
 #endregion
 

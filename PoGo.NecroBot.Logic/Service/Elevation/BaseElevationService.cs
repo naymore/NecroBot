@@ -1,26 +1,21 @@
 ﻿using Caching;
 using GeoCoordinatePortable;
-using PoGo.NecroBot.Logic.State;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PoGo.NecroBot.Logic.Service.Elevation
 {
     public abstract class BaseElevationService
     {
-        protected ISession _session;
-        protected LRUCache<string, double> _cache;
-        protected string _apiKey;
+        private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+
+        protected LRUCache<string, double> Cache;
+        protected string ApiKey;
 
         public abstract double GetElevationFromWebService(double lat, double lng);
 
-        public BaseElevationService(ISession session, LRUCache<string, double> cache)
+        protected BaseElevationService(LRUCache<string, double> cache)
         {
-            _session = session;
-            _cache = cache;
+            Cache = cache;
         }
 
         public string GetCacheKey(double lat, double lng)
@@ -37,38 +32,33 @@ namespace PoGo.NecroBot.Logic.Service.Elevation
         {
             string cacheKey = GetCacheKey(lat, lng);
             double elevation;
-            bool success = _cache.TryGetValue(cacheKey, out elevation);
-            if (!success)
+
+            bool success = Cache.TryGetValue(cacheKey, out elevation);
+
+            if (success)
+            {
+                _logger.Trace("Got elevation for Lat, Long ({0}, {1}) :: {2}m (CACHED)", lat, lng, elevation);
+            }
+            else
             {
                 elevation = GetElevationFromWebService(lat, lng);
-                if (elevation == 0)
+                if (elevation != 0.0)
                 {
-                    // Error getting elevation so just return 0.
-                    return 0;
-                }
-                else
-                {
-                    _cache.Add(cacheKey, elevation);
+                    Cache.Add(cacheKey, elevation);
+                    _logger.Trace("Got elevation for Lat, Long ({0}, {1}) :: {2}m", lat, lng, elevation);
                 }
             }
 
             // Always return a slightly random elevation.
-            return GetRandomElevation(elevation);
+            if (elevation != 0.0)
+                elevation = ApplyRandomness(elevation);
+
+            return elevation;
         }
 
-        public void UpdateElevation(ref GeoCoordinate position)
+        public double ApplyRandomness(double elevation)
         {
-            double elevation = GetElevation(position.Latitude, position.Longitude);
-            // Only update the position elevation if we got a non-zero elevation.
-            if (elevation != 0)
-            {
-                position.Altitude = elevation;
-            }
-        }
-
-        public double GetRandomElevation(double elevation)
-        {
-            return elevation + (new Random().NextDouble() * 5);
+            return elevation + new Random().NextDouble() * 3;
         }
     }
 }

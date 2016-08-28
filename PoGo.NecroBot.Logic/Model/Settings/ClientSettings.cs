@@ -5,7 +5,7 @@ using PokemonGo.RocketAPI.Enums;
 
 namespace PoGo.NecroBot.Logic.Model.Settings
 {
-    public class ClientSettings : ISettings
+    public class ClientSettings : IClientSettings
     {
         // Never spawn at the same position.
         private readonly Random _rand = new Random();
@@ -63,35 +63,35 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             get { return null; }
             set { GoogleRefreshToken = null; }
         }
-        AuthType ISettings.AuthType
+        AuthType IClientSettings.AuthType
         {
             get { return _settings.Auth.AuthConfig.AuthType; }
 
             set { _settings.Auth.AuthConfig.AuthType = value; }
         }
 
-        string ISettings.GoogleUsername
+        string IClientSettings.GoogleUsername
         {
             get { return _settings.Auth.AuthConfig.GoogleUsername; }
 
             set { _settings.Auth.AuthConfig.GoogleUsername = value; }
         }
 
-        string ISettings.GooglePassword
+        string IClientSettings.GooglePassword
         {
             get { return _settings.Auth.AuthConfig.GooglePassword; }
 
             set { _settings.Auth.AuthConfig.GooglePassword = value; }
         }
 
-        string ISettings.PtcUsername
+        string IClientSettings.PtcUsername
         {
             get { return _settings.Auth.AuthConfig.PtcUsername; }
 
             set { _settings.Auth.AuthConfig.PtcUsername = value; }
         }
 
-        string ISettings.PtcPassword
+        string IClientSettings.PtcPassword
         {
             get { return _settings.Auth.AuthConfig.PtcPassword; }
 
@@ -107,67 +107,67 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             get { return _settings.Auth.DeviceConfig.DevicePackageName; }
             set { _settings.Auth.DeviceConfig.DevicePackageName = value; }
         }
-        string ISettings.DeviceId
+        string IClientSettings.DeviceId
         {
             get { return _settings.Auth.DeviceConfig.DeviceId; }
             set { _settings.Auth.DeviceConfig.DeviceId = value; }
         }
-        string ISettings.AndroidBoardName
+        string IClientSettings.AndroidBoardName
         {
             get { return _settings.Auth.DeviceConfig.AndroidBoardName; }
             set { _settings.Auth.DeviceConfig.AndroidBoardName = value; }
         }
-        string ISettings.AndroidBootloader
+        string IClientSettings.AndroidBootloader
         {
             get { return _settings.Auth.DeviceConfig.AndroidBootloader; }
             set { _settings.Auth.DeviceConfig.AndroidBootloader = value; }
         }
-        string ISettings.DeviceBrand
+        string IClientSettings.DeviceBrand
         {
             get { return _settings.Auth.DeviceConfig.DeviceBrand; }
             set { _settings.Auth.DeviceConfig.DeviceBrand = value; }
         }
-        string ISettings.DeviceModel
+        string IClientSettings.DeviceModel
         {
             get { return _settings.Auth.DeviceConfig.DeviceModel; }
             set { _settings.Auth.DeviceConfig.DeviceModel = value; }
         }
-        string ISettings.DeviceModelIdentifier
+        string IClientSettings.DeviceModelIdentifier
         {
             get { return _settings.Auth.DeviceConfig.DeviceModelIdentifier; }
             set { _settings.Auth.DeviceConfig.DeviceModelIdentifier = value; }
         }
-        string ISettings.DeviceModelBoot
+        string IClientSettings.DeviceModelBoot
         {
             get { return _settings.Auth.DeviceConfig.DeviceModelBoot; }
             set { _settings.Auth.DeviceConfig.DeviceModelBoot = value; }
         }
-        string ISettings.HardwareManufacturer
+        string IClientSettings.HardwareManufacturer
         {
             get { return _settings.Auth.DeviceConfig.HardwareManufacturer; }
             set { _settings.Auth.DeviceConfig.HardwareManufacturer = value; }
         }
-        string ISettings.HardwareModel
+        string IClientSettings.HardwareModel
         {
             get { return _settings.Auth.DeviceConfig.HardwareModel; }
             set { _settings.Auth.DeviceConfig.HardwareModel = value; }
         }
-        string ISettings.FirmwareBrand
+        string IClientSettings.FirmwareBrand
         {
             get { return _settings.Auth.DeviceConfig.FirmwareBrand; }
             set { _settings.Auth.DeviceConfig.FirmwareBrand = value; }
         }
-        string ISettings.FirmwareTags
+        string IClientSettings.FirmwareTags
         {
             get { return _settings.Auth.DeviceConfig.FirmwareTags; }
             set { _settings.Auth.DeviceConfig.FirmwareTags = value; }
         }
-        string ISettings.FirmwareType
+        string IClientSettings.FirmwareType
         {
             get { return _settings.Auth.DeviceConfig.FirmwareType; }
             set { _settings.Auth.DeviceConfig.FirmwareType = value; }
         }
-        string ISettings.FirmwareFingerprint
+        string IClientSettings.FirmwareFingerprint
         {
             get { return _settings.Auth.DeviceConfig.FirmwareFingerprint; }
             set { _settings.Auth.DeviceConfig.FirmwareFingerprint = value; }
@@ -175,7 +175,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
 
         #endregion Device Config Values
 
-        double ISettings.DefaultLatitude
+        double IClientSettings.DefaultLatitude
         {
             get
             {
@@ -185,7 +185,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             set { _settings.LocationConfig.DefaultLatitude = value; }
         }
 
-        double ISettings.DefaultLongitude
+        double IClientSettings.DefaultLongitude
         {
             get
             {
@@ -197,7 +197,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
             set { _settings.LocationConfig.DefaultLongitude = value; }
         }
 
-        double ISettings.DefaultAltitude
+        double IClientSettings.DefaultAltitude
         {
             get
             {
@@ -207,8 +207,7 @@ namespace PoGo.NecroBot.Logic.Model.Settings
                     ((double)5 / Math.Cos(LocationUtils.getElevation(null, _settings.LocationConfig.DefaultLatitude, _settings.LocationConfig.DefaultLongitude)));
             }
 
-
-            set { }
+            set { } // why is this not being saved? Are Lat/Long/Alti "Start"-values rather than "Default"-values? Could be saved then?
         }
     }
 }

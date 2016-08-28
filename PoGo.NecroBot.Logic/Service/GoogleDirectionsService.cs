@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using GeoCoordinatePortable;
 using Newtonsoft.Json;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.Model.Google;
 using PoGo.NecroBot.Logic.Model.Google.GoogleObjects;
 using PoGo.NecroBot.Logic.State;

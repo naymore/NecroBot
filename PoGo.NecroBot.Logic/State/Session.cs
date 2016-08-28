@@ -1,84 +1,77 @@
-#region using directives
-
 using PoGo.NecroBot.Logic.Common;
 using PoGo.NecroBot.Logic.Event;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.Interfaces.Configuration;
 using PoGo.NecroBot.Logic.Service;
 using PokemonGo.RocketAPI;
 using POGOProtos.Networking.Responses;
 using PoGo.NecroBot.Logic.Service.Elevation;
 
-#endregion
-
 namespace PoGo.NecroBot.Logic.State
 {
-    public interface ISession
-    {
-        ISettings Settings { get; set; }
-        Inventory Inventory { get; }
-        Client Client { get; }
-        GetPlayerResponse Profile { get; set; }
-        Navigation Navigation { get; }
-        ILogicSettings LogicSettings { get; }
-        ITranslation Translation { get; }
-        IEventDispatcher EventDispatcher { get; }
-        TelegramService Telegram { get; set; }
-        SessionStats Stats { get; }
-        ElevationService ElevationService { get; }
-    }
-
-
     public class Session : ISession
     {
-        public Session(ISettings settings, ILogicSettings logicSettings) : this(settings, logicSettings, Common.Translation.Load(logicSettings))
+        private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+
+        private readonly IClientSettings _clientSettings;
+        private readonly SessionStats _stats;
+        private readonly ITranslation _translation;
+        private readonly ElevationService _elevationService;
+        private readonly IEventDispatcher _eventDispatcher;
+
+        private ILogicSettings _logicSettings;
+        
+        public Session(IClientSettings clientSettings, ILogicSettings logicSettings, ITranslation translation)
         {
+            _logger.Debug("--- Starting new Session ---");
+
+            _elevationService = new ElevationService(logicSettings);           
+            _clientSettings = clientSettings;
+            _stats = new SessionStats();
+            _translation = translation;
+            _logicSettings = logicSettings;
+            _eventDispatcher = new EventDispatcher();
+
+            // Update current altitude
+            ClientSettings.DefaultAltitude = ElevationService.GetElevation(clientSettings.DefaultLatitude, clientSettings.DefaultLongitude);
+
+            UpdateSessionConfiguration(clientSettings, logicSettings);
         }
 
-        public Session(ISettings settings, ILogicSettings logicSettings, ITranslation translation)
-        {
-            EventDispatcher = new EventDispatcher();
-            LogicSettings = logicSettings;
-
-            ElevationService = new ElevationService(this);
-
-            // Update current altitude before assigning settings.
-            settings.DefaultAltitude = ElevationService.GetElevation(settings.DefaultLatitude, settings.DefaultLongitude);
-            
-            Settings = settings;
-            
-            Translation = translation;
-            Reset(settings, LogicSettings);
-            Stats = new SessionStats();
-        }
-
-        public ISettings Settings { get; set; }
+        public IClientSettings ClientSettings => _clientSettings;
 
         public Inventory Inventory { get; private set; }
 
         public Client Client { get; private set; }
 
         public GetPlayerResponse Profile { get; set; }
+
         public Navigation Navigation { get; private set; }
 
-        public ILogicSettings LogicSettings { get; set; }
+        public ILogicSettings LogicSettings => _logicSettings;
 
-        public ITranslation Translation { get; }
+        public ITranslation Translation => _translation;
 
-        public IEventDispatcher EventDispatcher { get; }
+        public IEventDispatcher EventDispatcher => _eventDispatcher;
 
         public TelegramService Telegram { get; set; }
-        
-        public SessionStats Stats { get; set; }
 
-        public ElevationService ElevationService { get; }
+        public SessionStats Stats => _stats;
 
-        public void Reset(ISettings settings, ILogicSettings logicSettings)
+        public ElevationService ElevationService => _elevationService;
+
+        public void UpdateSessionConfiguration(IClientSettings settings, ILogicSettings logicSettings)
         {
-            ApiFailureStrategy _apiStrategy = new ApiFailureStrategy(this);
-            Client = new Client(Settings, _apiStrategy);
-            // ferox wants us to set this manually
+            ApiFailureStrategy apiFailureStrategy = new ApiFailureStrategy(this);
+            Client = new Client(ClientSettings, apiFailureStrategy);
+            
             Inventory = new Inventory(Client, logicSettings);
             Navigation = new Navigation(Client, logicSettings);
+        }
+
+        public void UpdateLogicSettings(ILogicSettings newLogicSettings)
+        {
+            _logicSettings = newLogicSettings;
         }
     }
 }

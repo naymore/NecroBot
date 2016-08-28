@@ -17,6 +17,7 @@ using Telegram.Bot.Args;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using System.Threading.Tasks;
+using PoGo.NecroBot.Logic.Interfaces;
 
 #endregion
 

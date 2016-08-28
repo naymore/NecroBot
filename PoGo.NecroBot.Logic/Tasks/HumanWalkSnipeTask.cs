@@ -18,6 +18,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using PoGo.NecroBot.Logic.Interfaces;
 
 namespace PoGo.NecroBot.Logic.Tasks
 {
@@ -282,10 +283,10 @@ namespace PoGo.NecroBot.Logic.Tasks
                 FetchFromSkiplagged(lat, lng)
             };
             if (_setting.HumanWalkingSnipeIncludeDefaultLocation &&
-                LocationUtils.CalculateDistanceInMeters(lat, lng, _session.Settings.DefaultLatitude, _session.Settings.DefaultLongitude) > 1000)
+                LocationUtils.CalculateDistanceInMeters(lat, lng, _session.ClientSettings.DefaultLatitude, _session.ClientSettings.DefaultLongitude) > 1000)
             {
-                allTasks.Add(FetchFromPokeradar(_session.Settings.DefaultLatitude, _session.Settings.DefaultLongitude));
-                allTasks.Add(FetchFromSkiplagged(_session.Settings.DefaultLatitude, _session.Settings.DefaultLongitude));
+                allTasks.Add(FetchFromPokeradar(_session.ClientSettings.DefaultLatitude, _session.ClientSettings.DefaultLongitude));
+                allTasks.Add(FetchFromSkiplagged(_session.ClientSettings.DefaultLatitude, _session.ClientSettings.DefaultLongitude));
             }
 
             Task.WaitAll(allTasks.ToArray());

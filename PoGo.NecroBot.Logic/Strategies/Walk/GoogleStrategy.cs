@@ -9,6 +9,7 @@ using PoGo.NecroBot.Logic.State;
 using PokemonGo.RocketAPI;
 using POGOProtos.Networking.Responses;
 using PoGo.NecroBot.Logic.Event;
+using PoGo.NecroBot.Logic.Interfaces;
 
 namespace PoGo.NecroBot.Logic.Strategies.Walk
 {

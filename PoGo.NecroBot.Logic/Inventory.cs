@@ -19,6 +19,7 @@ using POGOProtos.Inventory.Item;
 using POGOProtos.Networking.Responses;
 using POGOProtos.Settings.Master;
 using Caching;
+using PoGo.NecroBot.Logic.Interfaces;
 
 #endregion
 

@@ -1,6 +1,7 @@
 ﻿#region using directives
 
 using System;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.State;
 
 #endregion

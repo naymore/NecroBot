@@ -1,4 +1,5 @@
 using PoGo.NecroBot.Logic.Event;
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.State;
 
 namespace PoGo.NecroBot.CLI

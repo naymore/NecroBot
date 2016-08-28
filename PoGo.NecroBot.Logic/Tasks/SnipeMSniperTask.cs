@@ -10,6 +10,7 @@ using PoGo.NecroBot.Logic.Event;
 using POGOProtos.Enums;
 using Newtonsoft.Json;
 using System.IO;
+using PoGo.NecroBot.Logic.Interfaces;
 
 namespace PoGo.NecroBot.Logic.Tasks
 {

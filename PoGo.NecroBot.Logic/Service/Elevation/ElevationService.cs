@@ -1,40 +1,35 @@
 ﻿using Caching;
-using PoGo.NecroBot.Logic.State;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using PoGo.NecroBot.Logic.Interfaces.Configuration;
 
 namespace PoGo.NecroBot.Logic.Service.Elevation
 {
     public class ElevationService
     {
-        private MapQuestElevationService mapQuestService;
-        private GoogleElevationService googleService;
-        private ISession _session;
-        LRUCache<string, double> cache = new LRUCache<string, double>(capacity: 500);
+        private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
 
-        public ElevationService(ISession session)
+        private readonly LRUCache<string, double> _cache = new LRUCache<string, double>(capacity: 500);
+        private readonly MapQuestElevationService _mapQuestService;
+        private readonly GoogleElevationService _googleService;
+
+        public ElevationService(ILogicSettings logicSettings)
         {
-            _session = session;
-            mapQuestService = new MapQuestElevationService(session, cache);
-            googleService = new GoogleElevationService(session, cache);
+            _mapQuestService = new MapQuestElevationService(_cache);
+            _googleService = new GoogleElevationService(logicSettings, _cache);
         }
 
-        public double GetElevation(double lat, double lng)
+        public double GetElevation(double latitude, double longitude)
         {
+            _logger.Trace("Elevation LRUCache contains {0}/{1} items.", _cache.Count, _cache.Capacity);
+
             // First try Google service
-            double elevation = googleService.GetElevation(lat, lng);
+            double elevation = _googleService.GetElevation(latitude, longitude);
             if (elevation == 0)
             {
                 // Fallback to MapQuest service
-                elevation = mapQuestService.GetElevation(lat, lng);
+                elevation = _mapQuestService.GetElevation(latitude, longitude);
             }
 
             return elevation;
         }
     }
-
-
 }

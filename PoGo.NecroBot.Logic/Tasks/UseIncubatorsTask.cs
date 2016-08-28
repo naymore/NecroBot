@@ -15,6 +15,7 @@ using POGOProtos.Data.Player;
 using POGOProtos.Inventory;
 using POGOProtos.Networking.Responses;
 using NLog;
+using PoGo.NecroBot.Logic.Interfaces;
 
 namespace PoGo.NecroBot.Logic.Tasks
 {

@@ -1,5 +1,6 @@
 ﻿#region using directives
 
+using PoGo.NecroBot.Logic.Interfaces;
 using PoGo.NecroBot.Logic.State;
 using PoGo.NecroBot.Logic.Tasks;
 

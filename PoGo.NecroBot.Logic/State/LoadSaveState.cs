@@ -8,6 +8,7 @@ using PoGo.NecroBot.Logic.Common;
 using PoGo.NecroBot.Logic.Event;
 using PoGo.NecroBot.Logic.Utils;
 using System.Collections.Generic;
+using PoGo.NecroBot.Logic.Interfaces;
 
 #endregion
 
@@ -26,7 +27,7 @@ namespace PoGo.NecroBot.Logic.State
                 if (latLngFromFile != null)
                 {
                     var distance = LocationUtils.CalculateDistanceInMeters(latLngFromFile.Item1, latLngFromFile.Item2,
-                        session.Settings.DefaultLatitude, session.Settings.DefaultLongitude);
+                        session.ClientSettings.DefaultLatitude, session.ClientSettings.DefaultLongitude);
                     var lastModified = File.Exists(coordsPath) ? (DateTime?)File.GetLastWriteTime(coordsPath) : null;
                     if (lastModified != null)
                     {
